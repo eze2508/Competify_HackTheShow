@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { SpotifyColors } from '@/constants/theme';
@@ -66,6 +67,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="social"
+        options={{
+          title: 'Social',
+          tabBarIcon: ({ focused }) => (
+            <Ionicons 
+              name="people-outline" 
+              size={28} 
+              color={focused ? SpotifyColors.green : SpotifyColors.lightGray}
+              style={{ marginBottom: 4 }}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
@@ -78,6 +93,18 @@ export default function TabLayout() {
         name="index"
         options={{
           href: null, // Hide from tabs
+        }}
+      />
+      <Tabs.Screen
+        name="friends"
+        options={{
+          href: null, // Hide from tabs (replaced by social)
+        }}
+      />
+      <Tabs.Screen
+        name="clubs"
+        options={{
+          href: null, // Hide from tabs (replaced by social)
         }}
       />
     </Tabs>

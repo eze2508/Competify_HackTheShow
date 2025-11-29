@@ -28,6 +28,7 @@ function RootLayoutNav() {
     const inLogin = segments[0] === 'login';
     const inTokenInput = segments[0] === 'token-input';
     const inArtistRanking = segments[0] === 'artist-ranking';
+    const inClubDetail = segments[0] === 'club-detail';
 
     if (!isAuthenticated) {
       // Si no está autenticado, debe ir al login o token-input
@@ -36,10 +37,10 @@ function RootLayoutNav() {
       }
     } else {
       // Si está autenticado, debe ir a la app
-      // Permitir artist-ranking como pantalla válida cuando está autenticado
+      // Permitir artist-ranking y club-detail como pantallas válidas cuando está autenticado
       if (inLogin || inTokenInput) {
         router.replace('/(tabs)/explore');
-      } else if (!inAuthGroup && !inArtistRanking) {
+      } else if (!inAuthGroup && !inArtistRanking && !inClubDetail) {
         router.replace('/(tabs)/explore');
       }
     }
@@ -52,6 +53,7 @@ function RootLayoutNav() {
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="token-input" options={{ headerShown: false }} />
         <Stack.Screen name="artist-ranking" options={{ headerShown: false }} />
+        <Stack.Screen name="club-detail" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="light" />

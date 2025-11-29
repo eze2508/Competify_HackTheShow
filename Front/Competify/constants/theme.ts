@@ -53,6 +53,8 @@ export const Colors = {
     darkSurface: SpotifyColors.darkGray,
     text: SpotifyColors.white,
     textSecondary: SpotifyColors.lightGray,
+    success: '#1DB954',
+    error: '#E22134',
   },
 };
 

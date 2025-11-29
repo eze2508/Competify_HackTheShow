@@ -92,6 +92,53 @@ export interface StatsCardData {
   gradient?: boolean;
 }
 
+// Friends Types
+export interface FriendRequest {
+  id: string;
+  from_user: string;
+  to_user: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  created_at: string;
+  from_user_data?: {
+    username: string;
+    spotify_id?: string;
+  };
+  to_user_data?: {
+    username: string;
+    spotify_id?: string;
+  };
+}
+
+export interface Friend {
+  user_id: string;
+  username: string;
+  spotify_id?: string;
+  hours?: number;
+}
+
+// Clubs Types
+export interface Club {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+  cantidad_de_miembros?: number;
+}
+
+export interface ClubMember {
+  user_id: string;
+  username: string;
+  joined_at: string;
+}
+
+export interface ClubMessage {
+  id: string;
+  user_id: string;
+  username: string;
+  message: string;
+  created_at: string;
+}
+
 // Navigation Types
 export type RootStackParamList = {
   profile: undefined;

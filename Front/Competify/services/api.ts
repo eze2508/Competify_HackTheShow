@@ -1,4 +1,4 @@
-import { Artist, TopArtist, RankingEntry, User, TimePeriod } from '@/types';
+import { Artist, TopArtist, RankingEntry, User, TimePeriod, FriendRequest, Friend, Club, ClubMember, ClubMessage } from '@/types';
 import { VinylRank } from '@/components/ui/vinyl-badge';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
@@ -258,6 +258,149 @@ export class ApiService {
     if (totalHours >= 500) return 'gold';
     if (totalHours >= 100) return 'silver';
     return 'bronze';
+  }
+
+  // ========== FRIENDS API ==========
+
+  /**
+   * Envía una solicitud de amistad
+   */
+  static async sendFriendRequest(toUserId: string): Promise<any> {
+    return fetchWithAuth('/friends/request', {
+      method: 'POST',
+      body: JSON.stringify({ to_user: toUserId }),
+    });
+  }
+
+  /**
+   * Acepta una solicitud de amistad
+   */
+  static async acceptFriendRequest(requestId: string): Promise<any> {
+    return fetchWithAuth('/friends/accept', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  }
+
+  /**
+   * Rechaza una solicitud de amistad
+   */
+  static async rejectFriendRequest(requestId: string): Promise<any> {
+    return fetchWithAuth('/friends/reject', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  }
+
+  /**
+   * Cancela una solicitud de amistad enviada
+   */
+  static async cancelFriendRequest(requestId: string): Promise<any> {
+    return fetchWithAuth('/friends/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  }
+
+  /**
+   * Obtiene la lista de amigos
+   */
+  static async getFriendsList(): Promise<any> {
+    return fetchWithAuth('/friends/list');
+  }
+
+  /**
+   * Obtiene las solicitudes de amistad recibidas
+   */
+  static async getReceivedRequests(): Promise<any> {
+    return fetchWithAuth('/friends/requests/received');
+  }
+
+  /**
+   * Obtiene las solicitudes de amistad enviadas
+   */
+  static async getSentRequests(): Promise<any> {
+    return fetchWithAuth('/friends/requests/sent');
+  }
+
+  /**
+   * Elimina un amigo
+   */
+  static async removeFriend(friendUserId: string): Promise<any> {
+    return fetchWithAuth('/friends/remove', {
+      method: 'POST',
+      body: JSON.stringify({ friend_user_id: friendUserId }),
+    });
+  }
+
+  // ========== CLUBS API ==========
+
+  /**
+   * Crea un nuevo club
+   */
+  static async createClub(name: string): Promise<any> {
+    return fetchWithAuth('/clubs/create', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  /**
+   * Unirse a un club
+   */
+  static async joinClub(clubId: string): Promise<any> {
+    return fetchWithAuth('/clubs/join', {
+      method: 'POST',
+      body: JSON.stringify({ club_id: clubId }),
+    });
+  }
+
+  /**
+   * Salir de un club
+   */
+  static async leaveClub(clubId: string): Promise<any> {
+    return fetchWithAuth('/clubs/leave', {
+      method: 'POST',
+      body: JSON.stringify({ club_id: clubId }),
+    });
+  }
+
+  /**
+   * Buscar clubes por nombre
+   */
+  static async searchClubs(query: string): Promise<any> {
+    return fetchWithAuth(`/clubs/search?name=${encodeURIComponent(query)}`);
+  }
+
+  /**
+   * Obtiene la lista de clubes del usuario
+   */
+  static async getUserClubs(): Promise<any> {
+    return fetchWithAuth('/clubs/list');
+  }
+
+  /**
+   * Obtiene los miembros de un club
+   */
+  static async getClubMembers(clubId: string): Promise<any> {
+    return fetchWithAuth(`/clubs/${clubId}/members`);
+  }
+
+  /**
+   * Obtiene los mensajes de un club
+   */
+  static async getClubMessages(clubId: string): Promise<any> {
+    return fetchWithAuth(`/clubs/${clubId}/messages`);
+  }
+
+  /**
+   * Envía un mensaje a un club
+   */
+  static async sendClubMessage(clubId: string, message: string): Promise<any> {
+    return fetchWithAuth(`/clubs/${clubId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
   }
 }
 
