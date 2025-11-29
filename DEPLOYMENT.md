@@ -42,7 +42,7 @@ En el dashboard de Render, configurar:
 SPOTIFY_CLIENT_ID=tu_client_id_de_spotify
 SPOTIFY_CLIENT_SECRET=tu_client_secret_de_spotify
 SPOTIFY_REDIRECT_URI=https://competify-hacktheshow.onrender.com/auth/callback
-FRONTEND_URL=competify://callback
+BASE_URL=https://competify-hacktheshow.onrender.com
 SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
 APP_JWT_SECRET=un_secret_largo_y_aleatorio

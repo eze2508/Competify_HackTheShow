@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Competify - Redirigiendo...</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #1DB954 0%, #191414 100%);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      text-align: center;
+      max-width: 400px;
+    }
+    
+    .logo {
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #1DB954;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #1DB954;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 30px auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    p {
+      font-size: 16px;
+      opacity: 0.8;
+      margin-bottom: 20px;
+    }
+    
+    .manual-link {
+      display: inline-block;
+      background: #1DB954;
+      color: #191414;
+      padding: 12px 24px;
+      border-radius: 24px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 20px;
+      transition: opacity 0.2s;
+    }
+    
+    .manual-link:hover {
+      opacity: 0.9;
+    }
+    
+    .error {
+      background: rgba(255, 59, 48, 0.1);
+      border: 1px solid rgba(255, 59, 48, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">Competify</div>
+    <div class="spinner"></div>
+    <h1>Conectando con Spotify...</h1>
+    <p id="status">Redirigiendo a la aplicación</p>
+    
+    <div id="manual-section" style="display: none;">
+      <p>Si la aplicación no se abre automáticamente:</p>
+      <a href="#" id="manual-open" class="manual-link">Abrir Competify</a>
+    </div>
+    
+    <div id="error-section" class="error" style="display: none;">
+      <p>❌ Error al conectar</p>
+      <p id="error-message"></p>
+    </div>
+  </div>
+
+  <script>
+    // Obtener el token de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const error = urlParams.get('error');
+    
+    if (error) {
+      document.getElementById('status').textContent = 'Error en la autenticación';
+      document.getElementById('error-section').style.display = 'block';
+      document.getElementById('error-message').textContent = error;
+      document.querySelector('.spinner').style.display = 'none';
+    } else if (token) {
+      // Construir la URL del deep link
+      const deepLink = `competify://callback?token=${encodeURIComponent(token)}`;
+      
+      // Intentar abrir la app
+      window.location.href = deepLink;
+      
+      // Mostrar botón manual después de 2 segundos
+      setTimeout(() => {
+        document.getElementById('status').textContent = '¿No se abrió la app?';
+        document.getElementById('manual-section').style.display = 'block';
+        document.getElementById('manual-open').href = deepLink;
+      }, 2000);
+      
+      // Mensaje de éxito después de 3 segundos
+      setTimeout(() => {
+        document.getElementById('status').textContent = 'Ya puedes cerrar esta ventana';
+        document.querySelector('.spinner').style.display = 'none';
+      }, 3000);
+    } else {
+      document.getElementById('status').textContent = 'No se encontró el token de autenticación';
+      document.getElementById('error-section').style.display = 'block';
+      document.getElementById('error-message').textContent = 'Token no encontrado en la URL';
+      document.querySelector('.spinner').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

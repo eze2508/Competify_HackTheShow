@@ -40,7 +40,8 @@ app.use('/artists', artistsRoutes);
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.resolve('public/index.html'));
+  // Redirigir automáticamente al login de Spotify
+  res.redirect('/auth/login');
 });
 
 const PORT = process.env.PORT || 4000;

@@ -25,14 +25,17 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
+    const inLogin = segments[0] === 'login';
 
-    if (!isAuthenticated && inAuthGroup) {
-      // Si no está autenticado, no puede acceder a tabs
-      // El sistema de routing manejará la redirección
-    } else if (isAuthenticated) {
-      // Si está autenticado, asegurar que esté en la app
-      if (!inAuthGroup) {
-        router.push('/(tabs)/explore');
+    if (!isAuthenticated) {
+      // Si no está autenticado, debe ir al login
+      if (!inLogin) {
+        router.replace('/login');
+      }
+    } else {
+      // Si está autenticado, debe ir a la app
+      if (inLogin || !inAuthGroup) {
+        router.replace('/(tabs)/explore');
       }
     }
   }, [isAuthenticated, segments, isLoading]);

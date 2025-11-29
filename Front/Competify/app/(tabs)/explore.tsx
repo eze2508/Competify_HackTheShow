@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, View, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import { StyleSheet, ScrollView, View, FlatList, Pressable, ActivityIndicator, Image } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ArtistCard } from '@/components/ui/artist-card';
@@ -7,23 +7,14 @@ import { SpotifyColors } from '@/constants/theme';
 import { ApiService } from '@/services/api';
 import { Artist } from '@/types';
 
-const GENRE_FILTERS = ['All', 'Pop', 'Hip Hop', 'Reggaeton', 'R&B', 'Latin', 'Alternative', 'Rock'];
+const warningIcon = require('@/assets/images/warning.png');
 
-// Mock data de fallback
-const MOCK_ARTISTS: Artist[] = [
-  { id: '1', name: 'Taylor Swift', imageUrl: 'https://picsum.photos/200', genres: ['pop', 'country'], followers: 92000000 },
-  { id: '2', name: 'The Weeknd', imageUrl: 'https://picsum.photos/201', genres: ['r&b', 'pop'], followers: 78000000 },
-  { id: '3', name: 'Bad Bunny', imageUrl: 'https://picsum.photos/202', genres: ['reggaeton', 'latin'], followers: 74000000 },
-  { id: '4', name: 'Drake', imageUrl: 'https://picsum.photos/203', genres: ['hip hop', 'rap'], followers: 71000000 },
-  { id: '5', name: 'Ed Sheeran', imageUrl: 'https://picsum.photos/204', genres: ['pop', 'folk'], followers: 69000000 },
-  { id: '6', name: 'Ariana Grande', imageUrl: 'https://picsum.photos/205', genres: ['pop', 'r&b'], followers: 68000000 },
-  { id: '7', name: 'Justin Bieber', imageUrl: 'https://picsum.photos/206', genres: ['pop'], followers: 66000000 },
-  { id: '8', name: 'Billie Eilish', imageUrl: 'https://picsum.photos/207', genres: ['pop', 'alternative'], followers: 64000000 },
-];
+const GENRE_FILTERS = ['All', 'Pop', 'Hip Hop', 'Reggaeton', 'R&B', 'Latin', 'Alternative', 'Rock'];
 
 export default function ArtistsScreen() {
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [trackedArtistIds, setTrackedArtistIds] = useState<string[]>([]);
   
   // Artistas de diferentes secciones
@@ -39,13 +30,14 @@ export default function ArtistsScreen() {
   const loadArtists = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Intentar cargar datos reales del backend
+      // Cargar datos del backend
       const [topShort, tracked, discover, topLong] = await Promise.all([
-        ApiService.getTopArtists(10, 'short_term').catch(() => MOCK_ARTISTS.slice(0, 5)),
-        ApiService.getTrackedArtists().catch(() => []),
-        ApiService.getDiscoverArtists().catch(() => MOCK_ARTISTS.slice(2, 7)),
-        ApiService.getTopArtists(10, 'long_term').catch(() => MOCK_ARTISTS.slice(1, 6))
+        ApiService.getTopArtists(10, 'short_term'),
+        ApiService.getTrackedArtists(),
+        ApiService.getDiscoverArtists(),
+        ApiService.getTopArtists(10, 'long_term')
       ]);
 
       setTopArtists(topShort);
@@ -53,12 +45,19 @@ export default function ArtistsScreen() {
       setDiscoverArtists(discover);
       setLongTermArtists(topLong);
       setTrackedArtistIds(tracked.map(a => a.id));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading artists:', error);
-      // Si falla todo, usar mock data
-      setTopArtists(MOCK_ARTISTS.slice(0, 5));
-      setDiscoverArtists(MOCK_ARTISTS.slice(2, 7));
-      setLongTermArtists(MOCK_ARTISTS.slice(1, 6));
+      const errorMessage = error?.message || 'Error desconocido';
+      
+      if (errorMessage.includes('No authentication token')) {
+        setError('Debes iniciar sesión para ver tus artistas');
+      } else if (errorMessage.includes('Session expired')) {
+        setError('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión');
+      } else if (errorMessage.includes('Network')) {
+        setError('No se pudo conectar al servidor. Verifica tu conexión a internet');
+      } else {
+        setError('No se pudieron cargar los artistas. Intenta nuevamente');
+      }
     } finally {
       setLoading(false);
     }
@@ -104,6 +103,30 @@ export default function ArtistsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={SpotifyColors.green} />
           <ThemedText style={styles.loadingText}>Loading your artists...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  if (error) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.header}>
+          <ThemedText style={styles.title}>Artists</ThemedText>
+        </View>
+        <View style={styles.errorContainer}>
+          <Image source={warningIcon} style={styles.errorIcon} />
+          <ThemedText style={styles.errorTitle}>Error</ThemedText>
+          <ThemedText style={styles.errorMessage}>{error}</ThemedText>
+          <Pressable 
+            style={({ pressed }) => [
+              styles.retryButton,
+              pressed && styles.retryButtonPressed
+            ]}
+            onPress={loadArtists}
+          >
+            <ThemedText style={styles.retryButtonText}>Reintentar</ThemedText>
+          </Pressable>
         </View>
       </ThemedView>
     );
@@ -242,5 +265,43 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     color: SpotifyColors.lightGray,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorIcon: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: SpotifyColors.white,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: SpotifyColors.lightGray,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  retryButton: {
+    backgroundColor: SpotifyColors.green,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  retryButtonPressed: {
+    opacity: 0.8,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: SpotifyColors.black,
   },
 });

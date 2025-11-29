@@ -101,9 +101,9 @@ exports.callback = async (req, res) => {
     // create JWT for frontend (contains user.id)
     const token = jwt.sign({ userId: user.id, spotify_id: spotify_id }, JWT_SECRET, { expiresIn: '30d' });
 
-    // redirect to frontend with token (frontend should read token from query and store securely)
-    const redirectUrl = `${FRONTEND_URL}?token=${encodeURIComponent(token)}`;
-    res.redirect(redirectUrl);
+    // redirect to callback page that will handle the deep link
+    const callbackPageUrl = `${process.env.BASE_URL || 'http://localhost:4000'}/callback.html?token=${encodeURIComponent(token)}`;
+    res.redirect(callbackPageUrl);
   } catch (err) {
     console.error('Spotify callback error', err.response?.data || err.message);
     res.status(500).send('Auth error');
