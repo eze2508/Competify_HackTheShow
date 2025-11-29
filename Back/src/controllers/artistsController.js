@@ -189,14 +189,14 @@ exports.discoverArtists = async (req, res) => {
 };
 
 /**
- * GET /artists/similar - Obtiene artistas similares a tu top artista
+ * GET /artists/similar - Obtiene artistas similares por género a tus top artistas
  */
 exports.getSimilarArtists = async (req, res) => {
   try {
     const user = req.user;
     const accessToken = await ensureValidToken(user);
 
-    // Obtener varios top artistas para tener fallback
+    // Obtener top artistas del usuario
     const topResponse = await axios.get('https://api.spotify.com/v1/me/top/artists', {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: { limit: 5, time_range: 'short_term' }
@@ -208,35 +208,65 @@ exports.getSimilarArtists = async (req, res) => {
       return res.json({ artists: [], basedOn: null });
     }
 
-    // Intentar obtener artistas relacionados, probando con varios top artists si es necesario
-    let relatedArtists = [];
-    let successfulArtist = null;
-
-    for (const topArtist of topArtists) {
-      try {
-        const relatedResponse = await axios.get(`https://api.spotify.com/v1/artists/${topArtist.id}/related-artists`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-
-        if (relatedResponse.data.artists && relatedResponse.data.artists.length > 0) {
-          relatedArtists = relatedResponse.data.artists;
-          successfulArtist = topArtist;
-          break; // Encontramos artistas relacionados, salir del loop
-        }
-      } catch (err) {
-        // Si falla con 404, intentar con el siguiente artista
-        console.log(`No related artists found for ${topArtist.name}, trying next...`);
-        continue;
+    // Extraer todos los géneros de los top artistas
+    const allGenres = new Set();
+    topArtists.forEach(artist => {
+      if (artist.genres && artist.genres.length > 0) {
+        artist.genres.forEach(genre => allGenres.add(genre));
       }
-    }
+    });
 
-    // Si no encontramos artistas relacionados, devolver vacío
-    if (!successfulArtist || relatedArtists.length === 0) {
+    if (allGenres.size === 0) {
+      // Si no hay géneros, devolver vacío
       return res.json({ artists: [], basedOn: null });
     }
 
-    // Mapear los artistas relacionados
-    const mappedArtists = relatedArtists
+    // Obtener IDs de los top artistas para filtrarlos después
+    const topArtistIds = new Set(topArtists.map(a => a.id));
+
+    // Buscar artistas por los géneros más comunes
+    const genresList = Array.from(allGenres).slice(0, 3); // Usar los primeros 3 géneros
+    const searchQueries = genresList.map(genre => 
+      axios.get('https://api.spotify.com/v1/search', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { 
+          q: `genre:"${genre}"`, 
+          type: 'artist',
+          limit: 10
+        }
+      })
+    );
+
+    const searchResults = await Promise.allSettled(searchQueries);
+    
+    // Recolectar todos los artistas encontrados
+    const foundArtists = [];
+    searchResults.forEach(result => {
+      if (result.status === 'fulfilled' && result.value.data.artists?.items) {
+        result.value.data.artists.items.forEach(artist => {
+          // No incluir artistas que ya están en el top del usuario
+          if (!topArtistIds.has(artist.id)) {
+            foundArtists.push(artist);
+          }
+        });
+      }
+    });
+
+    // Eliminar duplicados por ID y ordenar por popularidad
+    const uniqueArtists = [];
+    const seenIds = new Set();
+    
+    foundArtists
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+      .forEach(artist => {
+        if (!seenIds.has(artist.id)) {
+          seenIds.add(artist.id);
+          uniqueArtists.push(artist);
+        }
+      });
+
+    // Mapear y limitar a 20 artistas
+    const mappedArtists = uniqueArtists
       .slice(0, 20)
       .map(artist => ({
         id: artist.id,
@@ -250,9 +280,9 @@ exports.getSimilarArtists = async (req, res) => {
     res.json({
       artists: mappedArtists,
       basedOn: {
-        id: successfulArtist.id,
-        name: successfulArtist.name,
-        imageUrl: successfulArtist.images[0]?.url || null
+        id: topArtists[0].id,
+        name: topArtists[0].name,
+        imageUrl: topArtists[0].images[0]?.url || null
       }
     });
   } catch (err) {
