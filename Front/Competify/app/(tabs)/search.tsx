@@ -1,33 +1,73 @@
-import React, { useState } from 'react';
-import { StyleSheet, ScrollView, View, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, ScrollView, View, TextInput, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ArtistCard } from '@/components/ui/artist-card';
 import { SpotifyColors } from '@/constants/theme';
-
-// Mock data - reemplazar con datos reales de la API de Spotify
-const ALL_ARTISTS = [
-  { id: '1', name: 'Taylor Swift', imageUrl: 'https://picsum.photos/200', genres: ['pop', 'country'], followers: 92000000 },
-  { id: '2', name: 'The Weeknd', imageUrl: 'https://picsum.photos/201', genres: ['r&b', 'pop'], followers: 78000000 },
-  { id: '3', name: 'Bad Bunny', imageUrl: 'https://picsum.photos/202', genres: ['reggaeton', 'latin'], followers: 74000000 },
-  { id: '4', name: 'Drake', imageUrl: 'https://picsum.photos/203', genres: ['hip hop', 'rap'], followers: 71000000 },
-  { id: '5', name: 'Ed Sheeran', imageUrl: 'https://picsum.photos/204', genres: ['pop', 'folk'], followers: 69000000 },
-  { id: '6', name: 'Ariana Grande', imageUrl: 'https://picsum.photos/205', genres: ['pop', 'r&b'], followers: 68000000 },
-  { id: '7', name: 'Justin Bieber', imageUrl: 'https://picsum.photos/206', genres: ['pop'], followers: 66000000 },
-  { id: '8', name: 'Billie Eilish', imageUrl: 'https://picsum.photos/207', genres: ['pop', 'alternative'], followers: 64000000 },
-  { id: '9', name: 'Dua Lipa', imageUrl: 'https://picsum.photos/208', genres: ['pop', 'dance'], followers: 62000000 },
-  { id: '10', name: 'Post Malone', imageUrl: 'https://picsum.photos/209', genres: ['hip hop', 'pop'], followers: 60000000 },
-  { id: '11', name: 'Rosalía', imageUrl: 'https://picsum.photos/210', genres: ['flamenco', 'latin'], followers: 28000000 },
-  { id: '12', name: 'Peso Pluma', imageUrl: 'https://picsum.photos/211', genres: ['corridos', 'regional mexican'], followers: 25000000 },
-];
+import { ApiService } from '@/services/api';
+import { Artist } from '@/types';
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [artists, setArtists] = useState<Artist[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [trackedArtistIds, setTrackedArtistIds] = useState<string[]>([]);
 
-  const filteredArtists = ALL_ARTISTS.filter(artist => 
-    artist.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    artist.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Cargar artistas trackeados al inicio
+  useEffect(() => {
+    loadTrackedArtists();
+  }, []);
+
+  const loadTrackedArtists = async () => {
+    try {
+      const tracked = await ApiService.getTrackedArtists();
+      setTrackedArtistIds(tracked.map(a => a.id));
+    } catch (error) {
+      console.error('Error loading tracked artists:', error);
+    }
+  };
+
+  // Buscar artistas cuando cambia el query
+  useEffect(() => {
+    const delaySearch = setTimeout(() => {
+      if (searchQuery.trim().length >= 2) {
+        searchArtists();
+      } else {
+        setArtists([]);
+      }
+    }, 500); // Debounce de 500ms
+
+    return () => clearTimeout(delaySearch);
+  }, [searchQuery]);
+
+  const searchArtists = async () => {
+    try {
+      setLoading(true);
+      const results = await ApiService.searchArtists(searchQuery);
+      setArtists(results);
+    } catch (error) {
+      console.error('Error searching artists:', error);
+      setArtists([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleTrackArtist = async (artist: Artist) => {
+    const isTracked = trackedArtistIds.includes(artist.id);
+    
+    try {
+      if (isTracked) {
+        await ApiService.untrackArtist(artist.id);
+        setTrackedArtistIds(prev => prev.filter(id => id !== artist.id));
+      } else {
+        await ApiService.trackArtist(artist);
+        setTrackedArtistIds(prev => [...prev, artist.id]);
+      }
+    } catch (error) {
+      console.error('Error toggling track:', error);
+    }
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -50,15 +90,23 @@ export default function SearchScreen() {
 
       {/* Results */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {searchQuery === '' ? (
+        {searchQuery.trim().length < 2 ? (
           <View style={styles.emptyState}>
             <ThemedText style={styles.emptyText}>
               Busca tus artistas favoritos
             </ThemedText>
+            <ThemedText style={styles.emptyHint}>
+              Escribe al menos 2 caracteres
+            </ThemedText>
+          </View>
+        ) : loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={SpotifyColors.green} />
+            <ThemedText style={styles.loadingText}>Buscando...</ThemedText>
           </View>
         ) : (
           <View style={styles.grid}>
-            {filteredArtists.map(artist => (
+            {artists.map(artist => (
               <ArtistCard
                 key={artist.id}
                 id={artist.id}
@@ -66,13 +114,15 @@ export default function SearchScreen() {
                 imageUrl={artist.imageUrl}
                 genres={artist.genres}
                 followers={artist.followers}
+                isTracked={trackedArtistIds.includes(artist.id)}
+                onToggleTrack={() => toggleTrackArtist(artist)}
                 onPress={() => console.log('Pressed artist:', artist.name)}
               />
             ))}
-            {filteredArtists.length === 0 && (
+            {artists.length === 0 && !loading && (
               <View style={styles.emptyState}>
                 <ThemedText style={styles.emptyText}>
-                  No se encontraron resultados
+                  No se encontraron resultados para "{searchQuery}"
                 </ThemedText>
               </View>
             )}
@@ -127,5 +177,21 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: SpotifyColors.lightGray,
+    textAlign: 'center',
+  },
+  emptyHint: {
+    fontSize: 14,
+    color: SpotifyColors.mediumGray,
+    marginTop: 8,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: SpotifyColors.lightGray,
+    marginTop: 12,
   },
 });

@@ -5,5 +5,6 @@ const auth = require('../middlewares/authMiddleware');
 const searchCtrl = require('../controllers/searchController');
 
 router.get('/', auth, searchCtrl.search);
+router.get('/artists', auth, searchCtrl.searchArtists);
 
 module.exports = router;
