@@ -75,3 +75,74 @@ Backend Node.js + Express para trackear tiempo escuchado en Spotify y guardar se
       "preview_url": "..."
     }
   ]
+
+## Clubes (Clanes)
+
+### Tablas nuevas
+- `clubs` (id, name, owner_id, created_at)
+- `club_members` (id, club_id, user_id, joined_at) — restricción: único user por club_members (un usuario solo puede estar en un club)
+- `club_messages` (id, club_id, user_id, message, created_at)
+
+### Endpoints (todos requieren autenticación - Bearer JWT)
+
+- `POST /clubs/create`
+  - Body: `{ "name": "MiClub" }`
+  - Reglas:
+    - Usuario no puede estar ya en un club → `{"error":"already_in_club"}`
+    - Nombre único → `{"error":"club_name_taken"}`
+  - Respuesta: club creado (objeto)
+
+- `POST /clubs/join`
+  - Body: `{ "clubId": "uuid" }`
+  - Reglas:
+    - Usuario no puede estar ya en un club → `{"error":"already_in_club"}`
+    - Club no existe → `{"error":"club_not_found"}`
+  - Respuesta: info del club
+
+- `POST /clubs/leave`
+  - Reglas:
+    - Si no pertenece → `{"error":"not_in_club"}`
+    - Si club queda vacío -> se elimina automáticamente
+  - Respuesta: `{ "left": true }`
+
+- `GET /clubs/search?name=algo`
+  - Búsqueda case-insensitive (max 20)
+  - Responde: `[ { id, name, cantidad_de_miembros } ]`
+
+- `GET /clubs/list?page=1&limit=10`
+  - Paginado
+  - Responde: `[ { id, name, member_count } ]`
+
+- `GET /clubs/:clubId/members`
+  - Devuelve: `[ { username, hours_listened } ]`
+  - `hours_listened` es la suma de `total_ms` en `listening_sessions` convertida a horas (1 decimal)
+
+- `GET /clubs/:clubId/messages?limit=50&before=timestamp`
+  - Devuelve mensajes ordenados por `created_at` desc
+  - Formato: `[ { id, username, message, created_at } ]`
+
+- `POST /clubs/:clubId/messages`
+  - Body: `{ "message": "hola" }`
+  - Reglas:
+    - Usuario debe pertenecer al club → `{"error":"not_in_club"}`
+    - Mensaje no vacío → `{"error":"message_empty"}`
+  - Respuesta: mensaje creado
+
+### Frontend UX (resumen)
+- Si el usuario **no** tiene club:
+  - Mostrar botones Crear / Unirse
+  - Mostrar lista de clubs (paginar)
+  - Buscar clubs por nombre
+- Si el usuario **tiene** club:
+  - Ver miembros con horas escuchadas
+  - Ver chat (paginado)
+  - Enviar mensajes
+  - Salir del club
+
+### Errores JSON principales
+- `{"error":"club_name_taken"}`
+- `{"error":"already_in_club"}`
+- `{"error":"club_not_found"}`
+- `{"error":"not_in_club"}`
+- `{"error":"message_empty"}`
+- `{"error":"server_error"}`
