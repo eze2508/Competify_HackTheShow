@@ -28,14 +28,28 @@ module.exports = {
   //   ACCEPT REQUEST
   // -----------------------------
   acceptRequest: async (userId, requestId) => {
-    const request = await db.getFriendRequest(requestId);
-    if (!request || request.to_user !== userId)
-      return { error: "request_not_found" };
+    try {
+      const request = await db.getFriendRequest(requestId);
+      console.log('Friend request found:', request);
+      
+      if (!request || request.to_user !== userId) {
+        console.log('Request not found or unauthorized:', { request, userId });
+        return { error: "request_not_found" };
+      }
 
-    await db.acceptFriendRequest(requestId);
-    await db.insertFriendsRelation(request.from_user, request.to_user);
+      console.log('Accepting friend request:', requestId);
+      const updateResult = await db.acceptFriendRequest(requestId);
+      console.log('Update result:', updateResult);
+      
+      console.log('Inserting friends relation:', { from: request.from_user, to: request.to_user });
+      const insertResult = await db.insertFriendsRelation(request.from_user, request.to_user);
+      console.log('Insert result:', insertResult);
 
-    return { accepted: true };
+      return { accepted: true };
+    } catch (error) {
+      console.error('Error in acceptRequest:', error);
+      return { error: "server_error", details: error.message };
+    }
   },
 
   // -----------------------------
