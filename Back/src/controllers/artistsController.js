@@ -44,7 +44,8 @@ exports.getTopArtists = async (req, res) => {
     res.json(artists);
   } catch (err) {
     console.error('getTopArtists error:', err.response?.data || err.message);
-    res.status(500).json({ error: 'Failed to get top artists' });
+    const errorDetails = err.response?.data?.error || err.message;
+    res.status(500).json({ error: 'Failed to get top artists', details: errorDetails });
   }
 };
 
@@ -63,10 +64,20 @@ exports.getTrackedArtists = async (req, res) => {
 
     if (error) throw error;
 
-    res.json(tracked || []);
+    // Mapear al formato esperado por el frontend
+    const artists = (tracked || []).map(artist => ({
+      id: artist.artist_id,
+      name: artist.artist_name,
+      imageUrl: artist.artist_image_url,
+      genres: artist.genres || [],
+      followers: 0,
+      popularity: 0
+    }));
+
+    res.json(artists);
   } catch (err) {
     console.error('getTrackedArtists error:', err.message);
-    res.status(500).json({ error: 'Failed to get tracked artists' });
+    res.status(500).json({ error: 'Failed to get tracked artists', details: err.message });
   }
 };
 
@@ -99,7 +110,7 @@ exports.trackArtist = async (req, res) => {
     res.json({ success: true, message: 'Artist tracked' });
   } catch (err) {
     console.error('trackArtist error:', err.message);
-    res.status(500).json({ error: 'Failed to track artist' });
+    res.status(500).json({ error: 'Failed to track artist', details: err.message });
   }
 };
 
@@ -122,7 +133,7 @@ exports.untrackArtist = async (req, res) => {
     res.json({ success: true, message: 'Artist untracked' });
   } catch (err) {
     console.error('untrackArtist error:', err.message);
-    res.status(500).json({ error: 'Failed to untrack artist' });
+    res.status(500).json({ error: 'Failed to untrack artist', details: err.message });
   }
 };
 
@@ -171,6 +182,7 @@ exports.discoverArtists = async (req, res) => {
     res.json(artists);
   } catch (err) {
     console.error('discoverArtists error:', err.response?.data || err.message);
-    res.status(500).json({ error: 'Failed to discover artists' });
+    const errorDetails = err.response?.data?.error || err.message;
+    res.status(500).json({ error: 'Failed to discover artists', details: errorDetails });
   }
 };

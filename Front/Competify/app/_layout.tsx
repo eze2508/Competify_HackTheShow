@@ -26,15 +26,16 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === '(tabs)';
     const inLogin = segments[0] === 'login';
+    const inTokenInput = segments[0] === 'token-input';
 
     if (!isAuthenticated) {
-      // Si no está autenticado, debe ir al login
-      if (!inLogin) {
+      // Si no está autenticado, debe ir al login o token-input
+      if (!inLogin && !inTokenInput) {
         router.replace('/login');
       }
     } else {
       // Si está autenticado, debe ir a la app
-      if (inLogin || !inAuthGroup) {
+      if (inLogin || inTokenInput || !inAuthGroup) {
         router.replace('/(tabs)/explore');
       }
     }
@@ -45,6 +46,7 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="token-input" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="light" />

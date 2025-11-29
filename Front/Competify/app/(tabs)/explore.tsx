@@ -6,12 +6,16 @@ import { ArtistCard } from '@/components/ui/artist-card';
 import { SpotifyColors } from '@/constants/theme';
 import { ApiService } from '@/services/api';
 import { Artist } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 const warningIcon = require('@/assets/images/warning.png');
 
 const GENRE_FILTERS = ['All', 'Pop', 'Hip Hop', 'Reggaeton', 'R&B', 'Latin', 'Alternative', 'Rock'];
 
 export default function ArtistsScreen() {
+  const { logout } = useAuth();
+  const router = useRouter();
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,32 +36,44 @@ export default function ArtistsScreen() {
       setLoading(true);
       setError(null);
       
-      // Cargar datos del backend
-      const [topShort, tracked, discover, topLong] = await Promise.all([
+      // Cargar cada sección independientemente para que si una falla, las otras se carguen
+      const results = await Promise.allSettled([
         ApiService.getTopArtists(10, 'short_term'),
         ApiService.getTrackedArtists(),
         ApiService.getDiscoverArtists(),
         ApiService.getTopArtists(10, 'long_term')
       ]);
 
-      setTopArtists(topShort);
-      setTrackedArtists(tracked);
-      setDiscoverArtists(discover);
-      setLongTermArtists(topLong);
-      setTrackedArtistIds(tracked.map(a => a.id));
+      // Procesar resultados
+      if (results[0].status === 'fulfilled') setTopArtists(results[0].value);
+      if (results[1].status === 'fulfilled') {
+        setTrackedArtists(results[1].value);
+        setTrackedArtistIds(results[1].value.map(a => a.id));
+      }
+      if (results[2].status === 'fulfilled') setDiscoverArtists(results[2].value);
+      if (results[3].status === 'fulfilled') setLongTermArtists(results[3].value);
+
+      // Si todas fallaron, mostrar error
+      const allFailed = results.every(r => r.status === 'rejected');
+      if (allFailed) {
+        const firstError: any = results.find(r => r.status === 'rejected');
+        const errorMessage = firstError?.reason?.message || 'Error desconocido';
+        
+        console.error('All requests failed. First error:', errorMessage);
+        
+        if (errorMessage.includes('No authentication token')) {
+          setError('Debes iniciar sesión para ver tus artistas');
+        } else if (errorMessage.includes('Session expired')) {
+          setError('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión');
+        } else if (errorMessage.includes('Network') || errorMessage.includes('Failed to fetch')) {
+          setError('No se pudo conectar al servidor. Verifica tu conexión a internet');
+        } else {
+          setError(`Error: ${errorMessage}`);
+        }
+      }
     } catch (error: any) {
       console.error('Error loading artists:', error);
-      const errorMessage = error?.message || 'Error desconocido';
-      
-      if (errorMessage.includes('No authentication token')) {
-        setError('Debes iniciar sesión para ver tus artistas');
-      } else if (errorMessage.includes('Session expired')) {
-        setError('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión');
-      } else if (errorMessage.includes('Network')) {
-        setError('No se pudo conectar al servidor. Verifica tu conexión a internet');
-      } else {
-        setError('No se pudieron cargar los artistas. Intenta nuevamente');
-      }
+      setError('Error inesperado al cargar los artistas');
     } finally {
       setLoading(false);
     }
@@ -108,6 +124,11 @@ export default function ArtistsScreen() {
     );
   }
 
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/login');
+  };
+
   if (error) {
     return (
       <ThemedView style={styles.container}>
@@ -127,6 +148,18 @@ export default function ArtistsScreen() {
           >
             <ThemedText style={styles.retryButtonText}>Reintentar</ThemedText>
           </Pressable>
+          
+          {error.includes('sesión') || error.includes('iniciar sesión') ? (
+            <Pressable 
+              style={({ pressed }) => [
+                styles.logoutButton,
+                pressed && styles.logoutButtonPressed
+              ]}
+              onPress={handleLogout}
+            >
+              <ThemedText style={styles.logoutButtonText}>Volver a Login</ThemedText>
+            </Pressable>
+          ) : null}
         </View>
       </ThemedView>
     );
@@ -303,5 +336,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: SpotifyColors.black,
+  },
+  logoutButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: SpotifyColors.lightGray,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginTop: 12,
+  },
+  logoutButtonPressed: {
+    opacity: 0.6,
+  },
+  logoutButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: SpotifyColors.lightGray,
   },
 });

@@ -108,6 +108,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const error = urlParams.get('error');
+    const expoScheme = urlParams.get('expo'); // Para Expo Go
     
     if (error) {
       document.getElementById('status').textContent = 'Error en la autenticación';
@@ -116,23 +117,36 @@
       document.querySelector('.spinner').style.display = 'none';
     } else if (token) {
       // Construir la URL del deep link
-      const deepLink = `competify://callback?token=${encodeURIComponent(token)}`;
-      
-      // Intentar abrir la app
-      window.location.href = deepLink;
-      
-      // Mostrar botón manual después de 2 segundos
-      setTimeout(() => {
-        document.getElementById('status').textContent = '¿No se abrió la app?';
-        document.getElementById('manual-section').style.display = 'block';
-        document.getElementById('manual-open').href = deepLink;
-      }, 2000);
-      
-      // Mensaje de éxito después de 3 segundos
-      setTimeout(() => {
-        document.getElementById('status').textContent = 'Ya puedes cerrar esta ventana';
+      // Si viene con expo=true, usar el scheme de Expo Go
+      let deepLink;
+      if (expoScheme === 'true') {
+        // Para Expo Go: exp://IP:PORT/--/callback?token=TOKEN
+        // El usuario necesitará copiar el token manualmente
+        deepLink = null;
+        document.getElementById('status').innerHTML = 'Copia este token y pégalo en la app:<br><br><strong style="word-break: break-all; font-size: 12px;">' + token + '</strong>';
         document.querySelector('.spinner').style.display = 'none';
-      }, 3000);
+        document.getElementById('manual-section').innerHTML = '<p style="margin-top: 20px;">Abre Expo Go y pega el token cuando se te solicite</p>';
+        document.getElementById('manual-section').style.display = 'block';
+      } else {
+        // Para app standalone
+        deepLink = `competify://callback?token=${encodeURIComponent(token)}`;
+        
+        // Intentar abrir la app
+        window.location.href = deepLink;
+        
+        // Mostrar botón manual después de 2 segundos
+        setTimeout(() => {
+          document.getElementById('status').textContent = '¿No se abrió la app?';
+          document.getElementById('manual-section').style.display = 'block';
+          document.getElementById('manual-open').href = deepLink;
+        }, 2000);
+        
+        // Mensaje de éxito después de 3 segundos
+        setTimeout(() => {
+          document.getElementById('status').textContent = 'Ya puedes cerrar esta ventana';
+          document.querySelector('.spinner').style.display = 'none';
+        }, 3000);
+      }
     } else {
       document.getElementById('status').textContent = 'No se encontró el token de autenticación';
       document.getElementById('error-section').style.display = 'block';

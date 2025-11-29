@@ -75,7 +75,19 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promi
       await clearAuthToken();
       throw new Error('Session expired. Please login again.');
     }
-    throw new Error(`API Error: ${response.status}`);
+    
+    // Intentar obtener el mensaje de error del backend
+    let errorMessage = `API Error: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      if (errorData.error) {
+        errorMessage = errorData.error;
+      }
+    } catch (e) {
+      // No se pudo parsear el JSON, usar mensaje genérico
+    }
+    
+    throw new Error(errorMessage);
   }
 
   return response.json();

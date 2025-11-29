@@ -4,8 +4,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SpotifyColors } from '@/constants/theme';
 import { ApiService } from '@/services/api';
+import { useRouter } from 'expo-router';
 
 export default function LoginScreen() {
+  const router = useRouter();
+
   const handleLogin = async () => {
     try {
       const loginUrl = ApiService.getLoginUrl();
@@ -19,6 +22,10 @@ export default function LoginScreen() {
     } catch (error) {
       console.error('Error opening login URL:', error);
     }
+  };
+
+  const handleManualToken = () => {
+    router.push('/token-input');
   };
 
   return (
@@ -52,6 +59,19 @@ export default function LoginScreen() {
         >
           <ThemedText style={styles.loginButtonText}>
             Iniciar sesión con Spotify
+          </ThemedText>
+        </Pressable>
+
+        {/* Manual Token Button for Expo Go */}
+        <Pressable 
+          style={({ pressed }) => [
+            styles.manualButton,
+            pressed && styles.manualButtonPressed
+          ]}
+          onPress={handleManualToken}
+        >
+          <ThemedText style={styles.manualButtonText}>
+            Pegar token manualmente (Expo Go)
           </ThemedText>
         </Pressable>
 
@@ -133,6 +153,24 @@ const styles = StyleSheet.create({
   footer: {
     fontSize: 12,
     color: SpotifyColors.lightGray,
+    textAlign: 'center',
+  },
+  manualButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: SpotifyColors.green,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginBottom: 16,
+  },
+  manualButtonPressed: {
+    opacity: 0.6,
+  },
+  manualButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: SpotifyColors.green,
     textAlign: 'center',
   },
 });
