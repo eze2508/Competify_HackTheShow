@@ -73,14 +73,70 @@ module.exports = {
   // LIST RECEIVED REQUESTS
   // -----------------------------
   listReceived: async (userId) => {
-    return await db.listReceivedFriendRequests(userId);
+    const requests = await db.listReceivedFriendRequests(userId);
+    
+    // Get usernames from Spotify for each from_user
+    const axios = require('axios');
+    const enrichedRequests = await Promise.all(
+      requests.map(async (req) => {
+        try {
+          // Get the user's access token to fetch Spotify profile
+          const fromUser = await db.getUserById(req.from_user_id);
+          if (fromUser && fromUser.access_token) {
+            const response = await axios.get('https://api.spotify.com/v1/me', {
+              headers: { Authorization: `Bearer ${fromUser.access_token}` }
+            });
+            return {
+              ...req,
+              from_user_name: response.data.display_name || req.from_user_spotify_id
+            };
+          }
+        } catch (error) {
+          // Si falla, usar el spotify_id como fallback
+        }
+        return {
+          ...req,
+          from_user_name: req.from_user_spotify_id
+        };
+      })
+    );
+    
+    return enrichedRequests;
   },
 
   // -----------------------------
   // LIST SENT REQUESTS
   // -----------------------------
   listSent: async (userId) => {
-    return await db.listSentFriendRequests(userId);
+    const requests = await db.listSentFriendRequests(userId);
+    
+    // Get usernames from Spotify for each to_user
+    const axios = require('axios');
+    const enrichedRequests = await Promise.all(
+      requests.map(async (req) => {
+        try {
+          // Get the user's access token to fetch Spotify profile
+          const toUser = await db.getUserById(req.to_user_id);
+          if (toUser && toUser.access_token) {
+            const response = await axios.get('https://api.spotify.com/v1/me', {
+              headers: { Authorization: `Bearer ${toUser.access_token}` }
+            });
+            return {
+              ...req,
+              to_user_name: response.data.display_name || req.to_user_spotify_id
+            };
+          }
+        } catch (error) {
+          // Si falla, usar el spotify_id como fallback
+        }
+        return {
+          ...req,
+          to_user_name: req.to_user_spotify_id
+        };
+      })
+    );
+    
+    return enrichedRequests;
   },
 
   // -----------------------------

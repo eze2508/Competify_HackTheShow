@@ -288,7 +288,7 @@ export default function SocialScreen() {
       <View key={request.id} style={styles.card}>
         <View style={styles.cardInfo}>
           <ThemedText style={styles.cardName}>
-            {request.from_user_spotify_id || request.from_user_id || 'Usuario'}
+            {request.from_user_name || request.from_user_spotify_id || 'Usuario'}
           </ThemedText>
           <ThemedText style={styles.cardDate}>
             {new Date(request.created_at).toLocaleDateString()}
@@ -326,7 +326,7 @@ export default function SocialScreen() {
       <View key={request.id} style={styles.card}>
         <View style={styles.cardInfo}>
           <ThemedText style={styles.cardName}>
-            {request.to_user_spotify_id || request.to_user_id || 'Usuario'}
+            {request.to_user_name || request.to_user_spotify_id || 'Usuario'}
           </ThemedText>
           <ThemedText style={styles.cardDate}>
             {new Date(request.created_at).toLocaleDateString()}
