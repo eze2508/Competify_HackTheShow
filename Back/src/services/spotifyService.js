@@ -1,3 +1,4 @@
+// src/services/spotifyService.js
 const axios = require('axios');
 const qs = require('qs');
 const supabase = require('../db/supabaseClient');
@@ -6,20 +7,13 @@ const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
-if (!CLIENT_ID || !CLIENT_SECRET) {
-  console.error('Missing SPOTIFY_CLIENT_ID/SECRET in env');
-  process.exit(1);
-}
-
 function basicAuthHeader() {
   const token = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
   return `Basic ${token}`;
 }
 
 async function refreshAccessTokenForUser(user) {
-  // user: row from users table with refresh_token
   if (!user?.refresh_token) return null;
-
   try {
     const data = qs.stringify({
       grant_type: 'refresh_token',
@@ -35,11 +29,7 @@ async function refreshAccessTokenForUser(user) {
     const { access_token, expires_in, refresh_token } = res.data;
     const expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
 
-    // Update Supabase user
-    const update = {
-      access_token,
-      token_expires_at: expiresAt
-    };
+    const update = { access_token, token_expires_at: expiresAt };
     if (refresh_token) update.refresh_token = refresh_token;
 
     const { error } = await supabase.from('users').update(update).eq('id', user.id);
@@ -54,21 +44,38 @@ async function refreshAccessTokenForUser(user) {
 async function getCurrentlyPlaying(access_token) {
   try {
     const res = await axios.get('https://api.spotify.com/v1/me/player/currently-playing', {
-      headers: {
-        Authorization: `Bearer ${access_token}`
-      },
-      validateStatus: status => status < 500 // let 204 pass
+      headers: { Authorization: `Bearer ${access_token}` },
+      validateStatus: status => status < 500
     });
-
-    if (res.status === 204) return null; // nothing playing
+    if (res.status === 204) return null;
     return res.data;
   } catch (err) {
-    // Possible 401 if token expired — caller should handle
+    throw err;
+  }
+}
+
+async function searchTracks(access_token, q) {
+  try {
+    const res = await axios.get('https://api.spotify.com/v1/search', {
+      headers: { Authorization: `Bearer ${access_token}` },
+      params: { q, type: 'track', limit: 20 }
+    });
+    const tracks = (res.data?.tracks?.items || []).map(t => ({
+      track_id: t.id,
+      name: t.name,
+      artist: (t.artists || []).map(a => a.name).join(', '),
+      album: t.album?.name || null,
+      album_image_url: t.album?.images?.[0]?.url || null
+    }));
+    return tracks;
+  } catch (err) {
+    console.error('Spotify search error', err.response?.data || err.message);
     throw err;
   }
 }
 
 module.exports = {
   refreshAccessTokenForUser,
-  getCurrentlyPlaying
+  getCurrentlyPlaying,
+  searchTracks
 };
