@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middlewares/authMiddleware'); // existing
-const requireClubMember = require('../middleware/requireClubMember');
+const requireClubMember = require('../middlewares/requireClubMember');
 const clubsCtrl = require('../controllers/clubs.controller');
 
 // Create
