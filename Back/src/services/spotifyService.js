@@ -60,7 +60,14 @@ async function getCurrentlyPlaying(access_token) {
       console.log('🎵 [Spotify] is_playing:', res.data.is_playing);
       return res.data;
     }
-    
+    if (res.status === 429) {
+      console.log('⚠️ [Spotify] Rate limited (429) - Too many requests');
+      return null;
+    }
+    if (res.status === 401) {
+      console.log('⚠️ [Spotify] Unauthorized (401) - Token may have expired');
+      return null;
+    }
     console.log('⚠️ [Spotify] Status inesperado:', res.status, 'Data:', res.data);
     return null;
   } catch (err) {
