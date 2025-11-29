@@ -50,6 +50,11 @@ async function getCurrentlyPlaying(access_token) {
     
     console.log('🔍 [Spotify] getCurrentlyPlaying status:', res.status);
     
+    if (res.status === 429) {
+      console.warn('⚠️ [Spotify] Rate limit (429) - Demasiadas peticiones, saltando este tick');
+      return null;
+    }
+    
     if (res.status === 204) {
       console.log('⚪ [Spotify] Status 204 - No hay reproducción activa');
       return null;
@@ -65,7 +70,7 @@ async function getCurrentlyPlaying(access_token) {
     return null;
   } catch (err) {
     console.error('🔴 [Spotify] Error en getCurrentlyPlaying:', err.response?.status, err.response?.data || err.message);
-    throw err;
+    return null; // No lanzar error, solo registrar y devolver null
   }
 }
 

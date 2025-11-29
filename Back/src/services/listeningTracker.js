@@ -1,7 +1,7 @@
 const supabase = require('../db/supabaseClient');
 const { refreshAccessTokenForUser, getCurrentlyPlaying } = require('./spotifyService');
 
-const pollingIntervalMs = 1000;
+const pollingIntervalMs = 10000; // 10 segundos para evitar rate limiting de Spotify
 
 // In-memory map to store current track per user (to detect changes)
 const activeMap = new Map(); // key: user.id, value: { trackId, startedAt, sessionId }
@@ -21,21 +21,21 @@ async function handleUser(user) {
 
     const playing = await getCurrentlyPlaying(user.access_token);
     if (!playing || !playing.item || !playing.is_playing) {
-      if (playing && playing.item && !playing.is_playing) {
-        console.log(`⏸️ [Tracker] Usuario ${user.id} tiene ${playing.item.name} pausado`);
-      } else {
-        console.log(`⚪ [Tracker] Usuario ${user.id} no está reproduciendo nada`);
-      }
       // nothing playing -> if we had an active session, close it
       const active = activeMap.get(user.id);
       if (active && !active.ended) {
+        if (playing && playing.item && !playing.is_playing) {
+          console.log(`⏸️ [Tracker] Usuario ${user.id} pausó "${playing.item.name}", cerrando sesión`);
+        } else {
+          console.log(`⏹️ [Tracker] Usuario ${user.id} detuvo reproducción, cerrando sesión`);
+        }
         await closeSession(user.id, active);
         activeMap.delete(user.id);
       }
       return;
     }
     
-    console.log(`🎵 [Tracker] Usuario ${user.id} reproduciendo activamente: ${playing.item.name}`);
+    console.log(`🎵 [Tracker] Usuario ${user.id} reproduciendo activamente: "${playing.item.name}"`);
 
     const track = playing.item;
     const trackId = track.id;
@@ -102,9 +102,9 @@ async function tick() {
       console.error('🔴 [Tracker] Error fetching users for tracker', error);
       return;
     }
-    console.log(`🔵 [Tracker] Tick - Rastreando ${users?.length || 0} usuarios conectados`);
-    if (users && users.length > 0) {
-      console.log('🔵 [Tracker] IDs de usuarios:', users.map(u => u.id).join(', '));
+    // Solo log cada 6 ticks (1 minuto con polling de 10s)
+    if (Math.random() < 0.16) {
+      console.log(`🔵 [Tracker] Rastreando ${users?.length || 0} usuarios conectados`);
     }
     await Promise.all(users.map(u => handleUser(u)));
   } catch (err) {
