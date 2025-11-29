@@ -1,0 +1,144 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 40px;
+  background: #111;
+  color: white;
+}
+
+h1 {
+  margin-bottom: 30px;
+}
+
+button {
+  display: block;
+  margin: 10px auto;
+  padding: 15px 25px;
+  font-size: 18px;
+  background: #1db954; /* Spotify green */
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #111;
+  transition: background 0.2s ease;
+}
+
+button:hover {
+  background: #169c43;
+}
+
+#output {
+  margin-top: 30px;
+  width: 80%;
+  max-width: 600px;
+  padding: 20px;
+  border: 1px solid #444;
+  background: #222;
+  border-radius: 10px;
+  text-align: left;
+  white-space: pre-wrap;
+}
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 30px;
+  background: #0f0f0f;
+  color: white;
+}
+
+h1 { margin-bottom: 20px; }
+
+.row { display:flex; gap:10px; justify-content:center; margin-bottom: 12px; }
+
+button {
+  padding: 12px 18px;
+  font-size: 16px;
+  background: #1db954;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #111;
+}
+button:hover { background: #169c43; }
+
+.search-row {
+  margin: 16px 0;
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  align-items:center;
+}
+
+#searchInput {
+  width: 300px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #111;
+  color: white;
+}
+
+#output {
+  margin-top: 20px;
+  width: 85%;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 14px;
+  border: 1px solid #333;
+  background: #111;
+  border-radius: 8px;
+  text-align: left;
+  white-space: pre-wrap;
+}
+
+/* Search results grid */
+#searchResults {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  width: 90%;
+  margin: 12px auto 30px;
+}
+
+.track-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #121212;
+  cursor: pointer;
+  transition: border 0.15s ease, transform 0.06s ease;
+}
+
+.track-card:hover {
+  border: 1px solid #1db954;
+  transform: translateY(-3px);
+}
+
+.track-card img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.track-info { text-align: left; }
+.track-info .title { font-weight: bold; }
+.track-info .meta { font-size: 13px; color: #bbb; }
+
+/* Top listeners box */
+#topListeners {
+  width: 90%;
+  max-width: 700px;
+  margin: 8px auto 60px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #0c0c0c;
+  text-align: left;
+}
+.top-item { padding: 6px 0; border-bottom: 1px dashed #222; }
+.top-item:last-child { border-bottom: none; }
