@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  backend:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - SPOTIFY_REDIRECT_URI=${SPOTIFY_REDIRECT_URI}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - APP_JWT_SECRET=${APP_JWT_SECRET}
+    restart: unless-stopped
+
+  # Optional: pgadmin for local Postgres UI (not needed for Supabase)
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    restart: unless-stopped
