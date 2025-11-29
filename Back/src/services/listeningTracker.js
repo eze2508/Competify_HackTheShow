@@ -3,6 +3,7 @@ const { refreshAccessTokenForUser, getCurrentlyPlaying } = require('./spotifySer
 
 const pollingIntervalMs = 30000; // 30 segundos para evitar rate limiting de Spotify
 let rateLimitBackoff = 0; // Segundos adicionales de espera cuando hay rate limit
+let rateLimitUntil = null; // Timestamp hasta cuando esperar por rate limit de Spotify
 
 // In-memory map to store current track per user (to detect changes)
 const activeMap = new Map(); // key: user.id, value: { trackId, startedAt, sessionId }
