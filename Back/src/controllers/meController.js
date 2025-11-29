@@ -65,16 +65,67 @@ exports.profile = async (req, res) => {
       headers: { Authorization: `Bearer ${user.access_token}` }
     });
 
+    // Calculate statistics from listening_sessions
+    const now = new Date();
+    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Total hours (all time)
+    const { data: totalData } = await supabase
+      .from('listening_sessions')
+      .select('total_ms')
+      .eq('user_id', user.id);
+    
+    const totalMs = (totalData || []).reduce((sum, session) => sum + (session.total_ms || 0), 0);
+    const totalHours = Math.floor(totalMs / (1000 * 60 * 60));
+
+    // Current month hours
+    const { data: monthData } = await supabase
+      .from('listening_sessions')
+      .select('total_ms')
+      .eq('user_id', user.id)
+      .gte('started_at', oneMonthAgo.toISOString());
+    
+    const monthMs = (monthData || []).reduce((sum, session) => sum + (session.total_ms || 0), 0);
+    const monthHours = Math.floor(monthMs / (1000 * 60 * 60));
+
+    // Current week hours
+    const { data: weekData } = await supabase
+      .from('listening_sessions')
+      .select('total_ms')
+      .eq('user_id', user.id)
+      .gte('started_at', oneWeekAgo.toISOString());
+    
+    const weekMs = (weekData || []).reduce((sum, session) => sum + (session.total_ms || 0), 0);
+    const weekHours = Math.floor(weekMs / (1000 * 60 * 60));
+
+    // Total unique artists
+    const { data: artistsData } = await supabase
+      .from('listening_sessions')
+      .select('track_id')
+      .eq('user_id', user.id);
+    
+    // Get unique track IDs (as a proxy for unique artists - could be improved)
+    const uniqueTracks = new Set((artistsData || []).map(s => s.track_id));
+    const totalArtists = uniqueTracks.size;
+
+    // Calculate rank based on total hours
+    let rank = 'bronze';
+    if (totalHours >= 1000) rank = 'diamond';
+    else if (totalHours >= 500) rank = 'platinum';
+    else if (totalHours >= 100) rank = 'gold';
+    else if (totalHours >= 50) rank = 'silver';
+
     res.json({
       user_id: user.id,
       spotify_id: user.spotify_id,
       username: spotifyProfile.data.display_name || user.spotify_id,
       avatar_url: spotifyProfile.data.images?.[0]?.url || 'https://i.pravatar.cc/300',
-      rank: 'bronze', // TODO: calcular rank real
-      total_hours: 0, // TODO: calcular desde listening_sessions
-      current_month_hours: 0,
-      current_week_hours: 0,
-      total_artists: 0
+      rank: rank,
+      total_hours: totalHours,
+      current_month_hours: monthHours,
+      current_week_hours: weekHours,
+      total_artists: totalArtists
     });
   } catch (err) {
     console.error('Profile error:', err.response?.data || err.message);
