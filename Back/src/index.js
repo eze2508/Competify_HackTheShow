@@ -19,7 +19,9 @@ app.use('/me', meRoutes);
 app.use('/search', searchRoutes);   
 app.use('/tracks', tracksRoutes);
 app.use('/spotify', spotifyRoutes);
-app.use(express.static(path.join(__dirname, '../public'))); 
+
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, "public")));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
