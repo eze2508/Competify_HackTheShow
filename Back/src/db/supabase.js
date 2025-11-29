@@ -151,7 +151,8 @@ async function getUserById(userId) {
 async function areFriends(userId1, userId2) {
   const { data, error } = await supabase.from('friends')
     .select('*')
-    .or(`and(user1.eq.${userId1},user2.eq.${userId2}),and(user1.eq.${userId2},user2.eq.${userId1})`)
+    .eq('user_id', userId1)
+    .eq('friend_id', userId2)
     .limit(1)
     .single();
   return data ? true : false;
@@ -221,30 +222,39 @@ async function deleteFriendRequest(requestId) {
 }
 
 async function insertFriendsRelation(userId1, userId2) {
-  const result = await supabase.from('friends').insert({
-    user1: userId1,
-    user2: userId2
+  // Insert both directions of the friendship
+  const result1 = await supabase.from('friends').insert({
+    user_id: userId1,
+    friend_id: userId2
   }).select().single();
   
-  if (result.error) {
-    console.error('Error inserting friends relation:', result.error);
-    throw result.error;
+  if (result1.error) {
+    console.error('Error inserting friends relation (direction 1):', result1.error);
+    throw result1.error;
   }
   
-  return result;
+  const result2 = await supabase.from('friends').insert({
+    user_id: userId2,
+    friend_id: userId1
+  }).select().single();
+  
+  if (result2.error) {
+    console.error('Error inserting friends relation (direction 2):', result2.error);
+    throw result2.error;
+  }
+  
+  return result1;
 }
 
 async function listFriends(userId) {
   const { data, error } = await supabase.from('friends')
-    .select('user1, user2')
-    .or(`user1.eq.${userId},user2.eq.${userId}`);
+    .select('friend_id')
+    .eq('user_id', userId);
   
   if (error) return [];
   
-  // Extract friend IDs (the other user in each relation)
-  const friendIds = data.map(row => 
-    row.user1 === userId ? row.user2 : row.user1
-  );
+  // Extract friend IDs
+  const friendIds = data.map(row => row.friend_id);
   
   if (friendIds.length === 0) return [];
   
@@ -319,9 +329,18 @@ async function listSentFriendRequests(userId) {
 }
 
 async function removeFriendsRelation(userId1, userId2) {
-  return supabase.from('friends')
+  // Remove both directions of the friendship
+  await supabase.from('friends')
     .delete()
-    .or(`and(user1.eq.${userId1},user2.eq.${userId2}),and(user1.eq.${userId2},user2.eq.${userId1})`);
+    .eq('user_id', userId1)
+    .eq('friend_id', userId2);
+  
+  await supabase.from('friends')
+    .delete()
+    .eq('user_id', userId2)
+    .eq('friend_id', userId1);
+  
+  return { success: true };
 }
 
 
