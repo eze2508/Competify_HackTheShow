@@ -145,70 +145,42 @@ exports.discoverArtists = async (req, res) => {
     const user = req.user;
     const accessToken = await ensureValidToken(user);
 
-    // Obtener recomendaciones basadas en top artists y géneros
-    const topResponse = await axios.get('https://api.spotify.com/v1/me/top/artists', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      params: { limit: 5, time_range: 'short_term' }
-    });
+    // Estrategia: Obtener artistas de medium_term que no están en short_term
+    const [shortTermResponse, mediumTermResponse] = await Promise.all([
+      axios.get('https://api.spotify.com/v1/me/top/artists', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { limit: 10, time_range: 'short_term' }
+      }),
+      axios.get('https://api.spotify.com/v1/me/top/artists', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { limit: 30, time_range: 'medium_term' }
+      })
+    ]);
 
-    const topArtists = topResponse.data.items;
+    const shortTermArtists = shortTermResponse.data.items || [];
+    const mediumTermArtists = mediumTermResponse.data.items || [];
     
-    // Si no hay artistas suficientes, devolver array vacío en lugar de error
-    if (!topArtists || topArtists.length === 0) {
+    if (mediumTermArtists.length === 0) {
       return res.json([]);
     }
 
-    // Filtrar artistas válidos (con ID no vacío)
-    const validArtists = topArtists.filter(a => a.id && a.id.length > 0);
+    // IDs de artistas que ya están en short_term
+    const shortTermIds = new Set(shortTermArtists.map(a => a.id));
     
-    if (validArtists.length === 0) {
-      return res.json([]);
-    }
+    // Filtrar artistas de medium_term que NO están en short_term (descubrimientos)
+    const discoverArtists = mediumTermArtists
+      .filter(artist => !shortTermIds.has(artist.id))
+      .slice(0, 20)
+      .map(artist => ({
+        id: artist.id,
+        name: artist.name,
+        imageUrl: artist.images[0]?.url || null,
+        genres: artist.genres || [],
+        followers: artist.followers?.total || 0,
+        popularity: artist.popularity || 0
+      }));
 
-    const seedArtistIds = validArtists.map(a => a.id).slice(0, Math.min(2, validArtists.length));
-
-    // Buscar artistas relacionados solo para IDs válidos
-    const relatedPromises = seedArtistIds.map(async artistId => {
-      try {
-        // Primero verificar que el artista existe
-        const artistCheck = await axios.get(`https://api.spotify.com/v1/artists/${artistId}`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        
-        if (!artistCheck.data || !artistCheck.data.id) {
-          return { data: { artists: [] } };
-        }
-
-        // Si existe, obtener artistas relacionados
-        const related = await axios.get(`https://api.spotify.com/v1/artists/${artistId}/related-artists`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        
-        return related;
-      } catch (err) {
-        console.error(`Error getting related artists for ${artistId}:`, err.response?.data || err.message);
-        return { data: { artists: [] } };
-      }
-    });
-
-    const relatedResponses = await Promise.all(relatedPromises);
-    const relatedArtists = relatedResponses.flatMap(r => r.data.artists).filter(a => a && a.id);
-
-    // Filtrar y mapear artistas únicos
-    const uniqueArtists = Array.from(
-      new Map(relatedArtists.map(a => [a.id, a])).values()
-    ).slice(0, 20);
-
-    const artists = uniqueArtists.map(artist => ({
-      id: artist.id,
-      name: artist.name,
-      imageUrl: artist.images[0]?.url || null,
-      genres: artist.genres || [],
-      followers: artist.followers?.total || 0,
-      popularity: artist.popularity || 0
-    }));
-
-    res.json(artists);
+    res.json(discoverArtists);
   } catch (err) {
     console.error('discoverArtists error:', err.response?.data || err.message);
     // En caso de error, devolver array vacío en lugar de 500
