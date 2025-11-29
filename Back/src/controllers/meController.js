@@ -125,17 +125,36 @@ exports.profile = async (req, res) => {
     // Total unique artists
     const { data: artistsData, error: artistsError } = await supabase
       .from('listening_sessions')
-      .select('track_id')
+      .select('track_id, artist_id')
       .eq('user_id', user.id);
-    
+
     if (artistsError) {
       console.error('🔴 [Profile] Error obteniendo tracks únicos:', artistsError);
     }
-    
-    // Get unique track IDs (as a proxy for unique artists - could be improved)
-    const uniqueTracks = new Set((artistsData || []).map(s => s.track_id));
-    const totalArtists = uniqueTracks.size;
-    console.log('🟢 [Profile] Tracks únicos:', totalArtists);
+
+    // Prefer artist_id stored in listening_sessions if available
+    let uniqueArtistIds = new Set();
+    const rows = artistsData || [];
+    if (rows.length > 0 && Object.prototype.hasOwnProperty.call(rows[0], 'artist_id')) {
+      // If the sessions already store artist_id, use it directly
+      rows.forEach(r => {
+        if (r.artist_id) uniqueArtistIds.add(r.artist_id);
+      });
+    } else {
+      // Fallback: resolve artist id per unique track by calling Spotify
+      // Limit number of lookups to avoid long running requests
+      const uniqueTrackIds = Array.from(new Set(rows.map(s => s.track_id))).slice(0, 200);
+      const axios = require('axios');
+      const lookups = await Promise.allSettled(uniqueTrackIds.map(trackId =>
+        axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
+          headers: { Authorization: `Bearer ${user.access_token}` }
+        }).then(r => r.data?.artists?.[0]?.id || null).catch(() => null)
+      ));
+      lookups.forEach(l => { if (l.status === 'fulfilled' && l.value) uniqueArtistIds.add(l.value); });
+    }
+
+    const totalArtists = uniqueArtistIds.size;
+    console.log('🟢 [Profile] Unique artist ids count:', totalArtists);
 
     // Calculate rank based on total hours
     let rank = 'bronze';
