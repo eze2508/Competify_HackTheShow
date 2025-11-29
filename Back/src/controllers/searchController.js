@@ -5,11 +5,13 @@ const { refreshAccessTokenForUser, searchTracks } = require('../services/spotify
 exports.search = async (req, res) => {
   try {
     const q = req.query.q;
-    if (!q) return res.status(400).json({ error: 'q query param required' });
+    // If q is missing or empty -> return query_empty true
+    if (typeof q === 'undefined' || q === null || ('' + q).trim() === '') {
+      return res.status(400).json({ query_empty: true });
+    }
 
     const user = req.user;
-
-    // ensure token fresh
+    // ensure token
     if (!user.access_token || new Date(user.token_expires_at) <= new Date()) {
       await refreshAccessTokenForUser(user);
       const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
@@ -21,6 +23,6 @@ exports.search = async (req, res) => {
     res.json(tracks);
   } catch (err) {
     console.error('Search controller error', err.response?.data || err.message || err);
-    res.status(500).json({ error: 'Search failed' });
+    return res.status(500).json({ error: 'spotify_failed' });
   }
 };

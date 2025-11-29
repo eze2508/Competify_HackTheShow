@@ -51,3 +51,27 @@ Backend Node.js + Express para trackear tiempo escuchado en Spotify y guardar se
 - `npm start` : iniciar el servidor
 - `npm run docker:build` : build docker
 - `npm run docker:up` : docker-compose up --build
+
+### Nuevo endpoint: Recommendations
+
+**GET** `/spotify/recommendations` (Protected — Bearer JWT)
+
+- Descripción: devuelve una lista de canciones recomendadas basadas en los "liked songs" del usuario en Spotify.
+- Lógica servidor:
+  - Usa el `access_token` del usuario (refresca si hace falta).
+  - Llama a `GET https://api.spotify.com/v1/me/tracks?limit=10` para obtener liked songs.
+  - Obtiene artistas y géneros (vía `/v1/artists`) y usa `seed_tracks`, `seed_artists`, `seed_genres` para llamar:
+    `GET https://api.spotify.com/v1/recommendations`.
+  - Si no hay liked songs, usa `seed_genres=pop` como fallback.
+- Respuesta (array):
+  ```json
+  [
+    {
+      "track_id": "...",
+      "name": "...",
+      "artist": "...",
+      "album": "...",
+      "album_image_url": "...",
+      "preview_url": "..."
+    }
+  ]
