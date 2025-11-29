@@ -60,34 +60,31 @@ async function listClubs({ page = 1, limit = 10 }) {
 
 async function getClubMemberCountMap(clubIds = []) {
   if (!clubIds || clubIds.length === 0) return {};
+  
+  // Obtener todos los miembros de los clubs especificados
   const { data, error } = await supabase
     .from('club_members')
-    .select('club_id, count:user_id', { count: 'exact' })
+    .select('club_id')
     .in('club_id', clubIds);
 
-  // supabase won't return count per group like that; better query grouped
-  // implement grouped count:
-  const { data: grouped, error: gErr } = await supabase
-    .from('club_members')
-    .select('club_id, count:user_id', { count: 'exact' })
-    .in('club_id', clubIds)
-    .group('club_id');
-
-  // fallback: do simple counts per club
-  if (gErr || !grouped) {
-    const counts = {};
-    for (const id of clubIds) {
-      const { count } = await supabase.from('club_members').select('*', { count: 'exact' }).eq('club_id', id);
-      counts[id] = count || 0;
-    }
-    return counts;
+  if (error || !data) {
+    console.error('Error getting club members:', error);
+    return {};
   }
 
-  const map = {};
-  (grouped || []).forEach(r => {
-    map[r.club_id] = Number(r.count) || 0;
+  // Contar manualmente agrupando por club_id
+  const counts = {};
+  clubIds.forEach(id => counts[id] = 0);
+  
+  data.forEach(member => {
+    if (counts[member.club_id] !== undefined) {
+      counts[member.club_id]++;
+    } else {
+      counts[member.club_id] = 1;
+    }
   });
-  return map;
+
+  return counts;
 }
 
 async function getClubMessages(club_id, limit = 50, before) {
