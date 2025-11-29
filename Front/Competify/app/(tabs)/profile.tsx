@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, View, Image, Pressable, Alert } from 'react-native';
+import { StyleSheet, ScrollView, View, Image, Pressable, Alert, RefreshControl } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { StatsCard } from '@/components/ui/stats-card';
@@ -61,6 +61,7 @@ export default function ProfileScreen() {
   const [userData, setUserData] = useState<any>(null);
   const [topArtists, setTopArtists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadProfileData();
@@ -81,6 +82,25 @@ export default function ProfileScreen() {
       console.error('Error loading profile data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const [user, artists] = await Promise.all([
+        ApiService.getCurrentUser(),
+        ApiService.getTopArtists(5, 'medium_term').catch(() => []),
+      ]);
+      
+      setUserId(user.id);
+      setUserData(user);
+      setTopArtists(artists);
+    } catch (error) {
+      console.error('Error refreshing profile data:', error);
+      Alert.alert('Error', 'No se pudo actualizar el perfil');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -111,7 +131,18 @@ export default function ProfileScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={SpotifyColors.green}
+            colors={[SpotifyColors.green]}
+            progressBackgroundColor={SpotifyColors.darkGray}
+          />
+        }
+      >
         {/* Header con avatar y nombre */}
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
@@ -142,22 +173,23 @@ export default function ProfileScreen() {
           <ThemedText style={styles.sectionTitle}>Estadísticas</ThemedText>
           <View style={styles.statsGrid}>
             <StatsCard 
-              label="Horas Totales" 
-              value={displayData.totalHours.toLocaleString()}
-              icon={statsIcons.music}
-              gradient
-            />
-            <StatsCard 
               label="Este Mes" 
               value={displayData.currentMonthHours}
               icon={statsIcons.calendar}
+              gradient
             />
-          </View>
-          <View style={styles.statsGrid}>
             <StatsCard 
               label="Esta Semana" 
               value={displayData.currentWeekHours}
               icon={statsIcons.stats}
+            />
+          </View>
+          <View style={styles.statsGrid}>
+            <StatsCard 
+              label="Horas Totales" 
+              value={displayData.totalHours}
+              icon={statsIcons.music}
+              gradient
             />
             <StatsCard 
               label="Artistas Únicos" 
@@ -219,6 +251,46 @@ export default function ProfileScreen() {
           >
             <ThemedText style={styles.logoutButtonText}>Cerrar Sesión</ThemedText>
           </Pressable>
+        </View>
+
+        {/* Detailed Time Breakdown */}
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Tiempo Total de Escucha</ThemedText>
+          <View style={styles.timeBreakdown}>
+            <View style={styles.timeCard}>
+              <ThemedText style={styles.timeValue}>
+                {Math.floor((displayData.total_ms || displayData.totalHours * 3600000) / (1000 * 60 * 60 * 24))}
+              </ThemedText>
+              <ThemedText style={styles.timeLabel}>Días</ThemedText>
+            </View>
+            <View style={styles.timeSeparator}>
+              <ThemedText style={styles.timeSeparatorText}>:</ThemedText>
+            </View>
+            <View style={styles.timeCard}>
+              <ThemedText style={styles.timeValue}>
+                {Math.floor(((displayData.total_ms || displayData.totalHours * 3600000) % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))}
+              </ThemedText>
+              <ThemedText style={styles.timeLabel}>Horas</ThemedText>
+            </View>
+            <View style={styles.timeSeparator}>
+              <ThemedText style={styles.timeSeparatorText}>:</ThemedText>
+            </View>
+            <View style={styles.timeCard}>
+              <ThemedText style={styles.timeValue}>
+                {Math.floor(((displayData.total_ms || displayData.totalHours * 3600000) % (1000 * 60 * 60)) / (1000 * 60))}
+              </ThemedText>
+              <ThemedText style={styles.timeLabel}>Min</ThemedText>
+            </View>
+            <View style={styles.timeSeparator}>
+              <ThemedText style={styles.timeSeparatorText}>:</ThemedText>
+            </View>
+            <View style={styles.timeCard}>
+              <ThemedText style={styles.timeValue}>
+                {Math.floor(((displayData.total_ms || displayData.totalHours * 3600000) % (1000 * 60)) / 1000)}
+              </ThemedText>
+              <ThemedText style={styles.timeLabel}>Seg</ThemedText>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </ThemedView>
@@ -297,6 +369,39 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: SpotifyColors.white,
     marginBottom: 16,
+  },
+  timeBreakdown: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: SpotifyColors.mediumGray,
+    borderRadius: 16,
+    padding: 20,
+    gap: 8,
+  },
+  timeCard: {
+    alignItems: 'center',
+    minWidth: 50,
+  },
+  timeValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: SpotifyColors.green,
+    marginBottom: 4,
+  },
+  timeLabel: {
+    fontSize: 12,
+    color: SpotifyColors.lightGray,
+    textTransform: 'uppercase',
+  },
+  timeSeparator: {
+    paddingHorizontal: 4,
+  },
+  timeSeparatorText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: SpotifyColors.green,
+    opacity: 0.5,
   },
   statsGrid: {
     flexDirection: 'row',

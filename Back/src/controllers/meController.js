@@ -123,6 +123,7 @@ exports.profile = async (req, res) => {
       avatar_url: spotifyProfile.data.images?.[0]?.url || 'https://i.pravatar.cc/300',
       rank: rank,
       total_hours: totalHours,
+      total_ms: totalMs,
       current_month_hours: monthHours,
       current_week_hours: weekHours,
       total_artists: totalArtists
