@@ -19,14 +19,7 @@ const allowedOrigins = [
 
 const app = express();
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
+  origin: "*"
 }));
 app.use(express.json());
 
@@ -36,12 +29,6 @@ app.use('/search', searchRoutes);
 app.use('/tracks', tracksRoutes);
 app.use('/spotify', spotifyRoutes);
 app.use('/artists', artistsRoutes);
-
-app.use(express.static('public'));
-
-app.get('/', (req, res) => {
-  res.sendFile(path.resolve('public/index.html'));
-});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
