@@ -145,65 +145,42 @@ exports.discoverArtists = async (req, res) => {
     const user = req.user;
     const accessToken = await ensureValidToken(user);
 
-    // Obtener top tracks para usar como semillas (más confiable que artistas)
-    const topTracksResponse = await axios.get('https://api.spotify.com/v1/me/top/tracks', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      params: { limit: 5, time_range: 'short_term' }
-    });
+    // Estrategia: Obtener artistas de medium_term que no están en short_term
+    const [shortTermResponse, mediumTermResponse] = await Promise.all([
+      axios.get('https://api.spotify.com/v1/me/top/artists', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { limit: 10, time_range: 'short_term' }
+      }),
+      axios.get('https://api.spotify.com/v1/me/top/artists', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { limit: 30, time_range: 'medium_term' }
+      })
+    ]);
 
-    const topTracks = topTracksResponse.data.items;
+    const shortTermArtists = shortTermResponse.data.items || [];
+    const mediumTermArtists = mediumTermResponse.data.items || [];
     
-    if (!topTracks || topTracks.length === 0) {
+    if (mediumTermArtists.length === 0) {
       return res.json([]);
     }
 
-    // Usar track IDs como semillas para recomendaciones
-    const seedTracks = topTracks.map(t => t.id).slice(0, 5).join(',');
-
-    // Obtener recomendaciones de Spotify
-    const recommendationsResponse = await axios.get('https://api.spotify.com/v1/recommendations', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      params: { 
-        seed_tracks: seedTracks,
-        limit: 20
-      }
-    });
-
-    const recommendations = recommendationsResponse.data.tracks || [];
+    // IDs de artistas que ya están en short_term
+    const shortTermIds = new Set(shortTermArtists.map(a => a.id));
     
-    // Extraer artistas únicos de las recomendaciones
-    const artistsMap = new Map();
-    
-    recommendations.forEach(track => {
-      track.artists.forEach(artist => {
-        if (!artistsMap.has(artist.id)) {
-          artistsMap.set(artist.id, artist);
-        }
-      });
-    });
+    // Filtrar artistas de medium_term que NO están en short_term (descubrimientos)
+    const discoverArtists = mediumTermArtists
+      .filter(artist => !shortTermIds.has(artist.id))
+      .slice(0, 20)
+      .map(artist => ({
+        id: artist.id,
+        name: artist.name,
+        imageUrl: artist.images[0]?.url || null,
+        genres: artist.genres || [],
+        followers: artist.followers?.total || 0,
+        popularity: artist.popularity || 0
+      }));
 
-    // Obtener detalles completos de los artistas
-    const artistIds = Array.from(artistsMap.keys()).slice(0, 20);
-    
-    if (artistIds.length === 0) {
-      return res.json([]);
-    }
-
-    const artistsDetailsResponse = await axios.get('https://api.spotify.com/v1/artists', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      params: { ids: artistIds.join(',') }
-    });
-
-    const artists = (artistsDetailsResponse.data.artists || []).map(artist => ({
-      id: artist.id,
-      name: artist.name,
-      imageUrl: artist.images[0]?.url || null,
-      genres: artist.genres || [],
-      followers: artist.followers?.total || 0,
-      popularity: artist.popularity || 0
-    }));
-
-    res.json(artists);
+    res.json(discoverArtists);
   } catch (err) {
     console.error('discoverArtists error:', err.response?.data || err.message);
     // En caso de error, devolver array vacío en lugar de 500
