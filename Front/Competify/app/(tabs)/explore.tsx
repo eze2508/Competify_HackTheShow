@@ -1,112 +1,166 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
+import React, { useState } from 'react';
+import { StyleSheet, ScrollView, View, FlatList, Pressable } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+import { ArtistCard } from '@/components/ui/artist-card';
+import { SpotifyColors } from '@/constants/theme';
 
-export default function TabTwoScreen() {
+// Mock data - reemplazar con datos reales de la API de Spotify
+const MOCK_ARTISTS = [
+  { id: '1', name: 'Taylor Swift', imageUrl: 'https://picsum.photos/200', genres: ['pop', 'country'], followers: 92000000 },
+  { id: '2', name: 'The Weeknd', imageUrl: 'https://picsum.photos/201', genres: ['r&b', 'pop'], followers: 78000000 },
+  { id: '3', name: 'Bad Bunny', imageUrl: 'https://picsum.photos/202', genres: ['reggaeton', 'latin'], followers: 74000000 },
+  { id: '4', name: 'Drake', imageUrl: 'https://picsum.photos/203', genres: ['hip hop', 'rap'], followers: 71000000 },
+  { id: '5', name: 'Ed Sheeran', imageUrl: 'https://picsum.photos/204', genres: ['pop', 'folk'], followers: 69000000 },
+  { id: '6', name: 'Ariana Grande', imageUrl: 'https://picsum.photos/205', genres: ['pop', 'r&b'], followers: 68000000 },
+  { id: '7', name: 'Justin Bieber', imageUrl: 'https://picsum.photos/206', genres: ['pop'], followers: 66000000 },
+  { id: '8', name: 'Billie Eilish', imageUrl: 'https://picsum.photos/207', genres: ['pop', 'alternative'], followers: 64000000 },
+];
+
+const GENRE_FILTERS = ['All', 'Pop', 'Hip Hop', 'Reggaeton', 'R&B', 'Latin', 'Alternative'];
+
+const getArtistSections = (trackedIds: string[]) => [
+  { title: 'Your Top Picks', artists: MOCK_ARTISTS.slice(0, 5) },
+  { title: 'Your Tracked Artists', artists: MOCK_ARTISTS.filter(a => trackedIds.includes(a.id)) },
+  { title: 'Similar Vibes', artists: MOCK_ARTISTS.slice(1, 6) },
+  { title: 'Trending Now', artists: MOCK_ARTISTS.slice(3, 8) },
+];
+
+export default function ArtistsScreen() {
+  const [selectedGenre, setSelectedGenre] = useState('All');
+  const [trackedArtists, setTrackedArtists] = useState<string[]>(['1', '3']); // IDs de artistas trackeados
+
+  const toggleTrackArtist = (artistId: string) => {
+    setTrackedArtists(prev => 
+      prev.includes(artistId) 
+        ? prev.filter(id => id !== artistId)
+        : [...prev, artistId]
+    );
+  };
+
+  const artistSections = getArtistSections(trackedArtists);
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <ThemedView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <ThemedText style={styles.title}>Artists</ThemedText>
+      </View>
+
+      {/* Genre Filters */}
+      <View style={styles.filtersContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+          {GENRE_FILTERS.map(genre => (
+            <Pressable
+              key={genre}
+              style={({ pressed }) => [
+                styles.filterChip,
+                selectedGenre === genre && styles.filterChipActive,
+                pressed && styles.filterChipPressed,
+              ]}
+              onPress={() => setSelectedGenre(genre)}
+            >
+              <ThemedText style={[
+                styles.filterText,
+                selectedGenre === genre && styles.filterTextActive,
+              ]}>
+                {genre}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Sections */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {artistSections.map((section, index) => (
+          section.artists.length > 0 && (
+            <View key={index} style={styles.section}>
+              <ThemedText style={styles.sectionTitle}>{section.title}</ThemedText>
+              <FlatList
+                horizontal
+                data={section.artists}
+                renderItem={({ item }) => (
+                  <ArtistCard
+                    id={item.id}
+                    name={item.name}
+                    imageUrl={item.imageUrl}
+                    genres={item.genres}
+                    followers={item.followers}
+                    isTracked={trackedArtists.includes(item.id)}
+                    onToggleTrack={() => toggleTrackArtist(item.id)}
+                    onPress={() => console.log('Pressed artist:', item.name)}
+                  />
+                )}
+                keyExtractor={item => item.id}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalList}
+              />
+            </View>
+          )
+        ))}
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: SpotifyColors.black,
   },
-  titleContainer: {
-    flexDirection: 'row',
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    backgroundColor: SpotifyColors.black,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: SpotifyColors.white,
+  },
+  filtersContainer: {
+    paddingVertical: 12,
+    backgroundColor: SpotifyColors.black,
+  },
+  filters: {
+    paddingHorizontal: 16,
     gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: SpotifyColors.mediumGray,
+  },
+  filterChipActive: {
+    backgroundColor: SpotifyColors.green,
+  },
+  filterChipPressed: {
+    opacity: 0.7,
+  },
+  filterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: SpotifyColors.lightGray,
+  },
+  filterTextActive: {
+    color: SpotifyColors.black,
+  },
+  content: {
+    flex: 1,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: SpotifyColors.white,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  horizontalList: {
+    paddingHorizontal: 16,
   },
 });

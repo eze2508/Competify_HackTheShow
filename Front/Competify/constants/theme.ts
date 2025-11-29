@@ -5,8 +5,27 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Spotify Color Palette
+export const SpotifyColors = {
+  green: '#1DB954',
+  black: '#191414',
+  darkGray: '#121212',
+  mediumGray: '#282828',
+  lightGray: '#B3B3B3',
+  white: '#FFFFFF',
+};
+
+// Vinyl Rank Colors
+export const VinylRanks = {
+  bronze: '#CD7F32',
+  silver: '#C0C0C0',
+  gold: '#FFD700',
+  platinum: '#E5E4E2',
+  diamond: '#B9F2FF',
+};
+
+const tintColorLight = SpotifyColors.green;
+const tintColorDark = SpotifyColors.green;
 
 export const Colors = {
   light: {
@@ -18,12 +37,22 @@ export const Colors = {
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: SpotifyColors.white,
+    background: SpotifyColors.black,
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: SpotifyColors.lightGray,
+    tabIconDefault: SpotifyColors.lightGray,
     tabIconSelected: tintColorDark,
+    card: SpotifyColors.mediumGray,
+    border: SpotifyColors.darkGray,
+  },
+  spotify: {
+    primary: SpotifyColors.green,
+    background: SpotifyColors.black,
+    surface: SpotifyColors.mediumGray,
+    darkSurface: SpotifyColors.darkGray,
+    text: SpotifyColors.white,
+    textSecondary: SpotifyColors.lightGray,
   },
 };
 
