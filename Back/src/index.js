@@ -19,14 +19,7 @@ const allowedOrigins = [
 
 const app = express();
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
+  origin: "*"
 }));
 app.use(express.json());
 
@@ -43,7 +36,6 @@ app.get('/', (req, res) => {
   // Redirigir automáticamente al login de Spotify
   res.redirect('/auth/login');
 });
-
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
