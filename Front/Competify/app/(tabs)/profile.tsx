@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, ScrollView, View, Image, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, ScrollView, View, Image, Pressable, Alert } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { StatsCard } from '@/components/ui/stats-card';
@@ -7,6 +7,9 @@ import { VinylBadge, VinylRank } from '@/components/ui/vinyl-badge';
 import { SpotifyColors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import { ApiService } from '@/services/api';
+import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 
 const achievementIcons = {
   trophy: require('@/assets/images/trophy.png'),
@@ -54,11 +57,57 @@ const MOCK_USER_DATA = {
 export default function ProfileScreen() {
   const { logout } = useAuth();
   const router = useRouter();
+  const [userId, setUserId] = useState<string>('');
+  const [userData, setUserData] = useState<any>(null);
+  const [topArtists, setTopArtists] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    try {
+      setLoading(true);
+      const [user, artists] = await Promise.all([
+        ApiService.getCurrentUser(),
+        ApiService.getTopArtists(5, 'medium_term').catch(() => []),
+      ]);
+      
+      setUserId(user.id);
+      setUserData(user);
+      setTopArtists(artists);
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyUserId = async () => {
+    if (userId) {
+      await Clipboard.setStringAsync(userId);
+      Alert.alert('Copiado', 'Tu ID de usuario fue copiado al portapapeles');
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
     // El AuthContext se encargará de redirigir al login
   };
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ThemedText>Cargando...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  const displayData = userData || MOCK_USER_DATA;
+  const displayArtists = topArtists.length > 0 ? topArtists : MOCK_USER_DATA.topArtists;
 
   return (
     <ThemedView style={styles.container}>
@@ -72,12 +121,20 @@ export default function ProfileScreen() {
               resizeMode="contain"
             />
             <Image 
-              source={{ uri: MOCK_USER_DATA.avatarUrl }} 
+              source={{ uri: displayData.avatarUrl }} 
               style={styles.avatar}
             />
           </View>
-          <ThemedText style={styles.username}>{MOCK_USER_DATA.username}</ThemedText>
-          <ThemedText style={styles.rankText}>{MOCK_USER_DATA.rank.toUpperCase()}</ThemedText>
+          <ThemedText style={styles.username}>{displayData.username}</ThemedText>
+          <ThemedText style={styles.rankText}>{displayData.rank.toUpperCase()}</ThemedText>
+          
+          {/* User ID Section */}
+          {userId && (
+            <Pressable onPress={copyUserId} style={styles.userIdContainer}>
+              <ThemedText style={styles.userIdLabel}>ID: {userId}</ThemedText>
+              <Ionicons name="copy-outline" size={20} color={SpotifyColors.green} />
+            </Pressable>
+          )}
         </View>
 
         {/* Stats Cards */}
@@ -86,25 +143,25 @@ export default function ProfileScreen() {
           <View style={styles.statsGrid}>
             <StatsCard 
               label="Horas Totales" 
-              value={MOCK_USER_DATA.totalHours.toLocaleString()}
+              value={displayData.totalHours.toLocaleString()}
               icon={statsIcons.music}
               gradient
             />
             <StatsCard 
               label="Este Mes" 
-              value={MOCK_USER_DATA.currentMonthHours}
+              value={displayData.currentMonthHours}
               icon={statsIcons.calendar}
             />
           </View>
           <View style={styles.statsGrid}>
             <StatsCard 
               label="Esta Semana" 
-              value={MOCK_USER_DATA.currentWeekHours}
+              value={displayData.currentWeekHours}
               icon={statsIcons.stats}
             />
             <StatsCard 
               label="Artistas Únicos" 
-              value={MOCK_USER_DATA.totalArtists}
+              value={displayData.totalArtists}
               icon={statsIcons.microphone}
             />
           </View>
@@ -113,15 +170,20 @@ export default function ProfileScreen() {
         {/* Top Artistas */}
         <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>Artistas Más Escuchados</ThemedText>
-          {MOCK_USER_DATA.topArtists.map((artist, index) => (
+          {displayArtists.map((artist, index) => (
             <View key={artist.id} style={styles.artistItem}>
               <View style={styles.artistLeft}>
                 <ThemedText style={styles.artistRank}>#{index + 1}</ThemedText>
-                <Image source={{ uri: artist.imageUrl }} style={styles.artistImage} />
+                <Image 
+                  source={{ uri: artist.imageUrl || artist.image_url || 'https://picsum.photos/200' }} 
+                  style={styles.artistImage} 
+                />
                 <ThemedText style={styles.artistName}>{artist.name}</ThemedText>
               </View>
               <View style={styles.artistRight}>
-                <ThemedText style={styles.artistHours}>{artist.hours}h</ThemedText>
+                <ThemedText style={styles.artistHours}>
+                  {artist.hours ? `${artist.hours}h` : ''}
+                </ThemedText>
               </View>
             </View>
           ))}
@@ -168,6 +230,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: SpotifyColors.black,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     alignItems: 'center',
     paddingTop: 60,
@@ -206,6 +273,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: SpotifyColors.lightGray,
     letterSpacing: 2,
+  },
+  userIdContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: SpotifyColors.mediumGray,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 12,
+    gap: 8,
+  },
+  userIdLabel: {
+    fontSize: 12,
+    color: SpotifyColors.lightGray,
+    fontFamily: 'monospace',
   },
   section: {
     padding: 16,

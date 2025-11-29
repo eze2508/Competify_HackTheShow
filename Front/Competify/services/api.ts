@@ -105,10 +105,10 @@ export class ApiService {
    * Obtiene el perfil del usuario actual desde el backend
    */
   static async getCurrentUser(): Promise<User> {
-    const data = await fetchWithAuth('/me/current');
+    const data = await fetchWithAuth('/me/profile');
     // Mapear respuesta del backend al tipo User
     return {
-      id: data.user_id || '1',
+      id: String(data.user_id), // Convertir a string
       spotifyId: data.spotify_id || '',
       username: data.username || 'Usuario',
       avatarUrl: data.avatar_url || 'https://i.pravatar.cc/300',

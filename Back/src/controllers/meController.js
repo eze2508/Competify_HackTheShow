@@ -48,6 +48,40 @@ exports.current = async (req, res) => {
   }
 };
 
+exports.profile = async (req, res) => {
+  try {
+    const user = req.user;
+    
+    // Refresh token if needed
+    if (!user.access_token || new Date(user.token_expires_at) <= new Date()) {
+      await refreshAccessTokenForUser(user);
+      const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
+      Object.assign(user, data);
+    }
+
+    // Get Spotify profile info
+    const axios = require('axios');
+    const spotifyProfile = await axios.get('https://api.spotify.com/v1/me', {
+      headers: { Authorization: `Bearer ${user.access_token}` }
+    });
+
+    res.json({
+      user_id: user.id,
+      spotify_id: user.spotify_id,
+      username: spotifyProfile.data.display_name || user.spotify_id,
+      avatar_url: spotifyProfile.data.images?.[0]?.url || 'https://i.pravatar.cc/300',
+      rank: 'bronze', // TODO: calcular rank real
+      total_hours: 0, // TODO: calcular desde listening_sessions
+      current_month_hours: 0,
+      current_week_hours: 0,
+      total_artists: 0
+    });
+  } catch (err) {
+    console.error('Profile error:', err.response?.data || err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 exports.stats = async (req, res) => {
   const user = req.user;
   try {

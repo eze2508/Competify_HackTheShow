@@ -11,6 +11,7 @@ const tracksRoutes = require('./routes/tracks');
 const spotifyRoutes = require('./routes/spotify.routes');
 const artistsRoutes = require('./routes/artists');
 const clubsRoutes = require('./routes/clubs.routes');
+const friendsRoutes = require('./routes/friends.routes');
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -31,6 +32,7 @@ app.use('/tracks', tracksRoutes);
 app.use('/spotify', spotifyRoutes);
 app.use('/artists', artistsRoutes);
 app.use('/clubs', clubsRoutes);
+app.use('/friends', friendsRoutes);
 
 app.use(express.static('public'));
 

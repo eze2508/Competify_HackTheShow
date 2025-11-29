@@ -38,9 +38,9 @@ export default function SocialScreen() {
     try {
       setLoading(true);
       const [friendsData, receivedData, sentData] = await Promise.all([
-        ApiService.getFriendsList(),
-        ApiService.getReceivedRequests(),
-        ApiService.getSentRequests(),
+        ApiService.getFriendsList().catch(() => ({ friends: [] })),
+        ApiService.getReceivedRequests().catch(() => ({ requests: [] })),
+        ApiService.getSentRequests().catch(() => ({ requests: [] })),
       ]);
 
       setFriends(friendsData.friends || []);
@@ -48,7 +48,10 @@ export default function SocialScreen() {
       setSentRequests(sentData.requests || []);
     } catch (error) {
       console.error('Error loading friends data:', error);
-      Alert.alert('Error', 'No se pudo cargar la información de amigos');
+      // Silenciar el error y usar datos vacíos como fallback
+      setFriends([]);
+      setReceivedRequests([]);
+      setSentRequests([]);
     } finally {
       setLoading(false);
     }
@@ -57,11 +60,12 @@ export default function SocialScreen() {
   const loadClubsData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await ApiService.getUserClubs();
+      const data = await ApiService.getUserClubs().catch(() => ({ clubs: [] }));
       setMyClubs(data.clubs || []);
     } catch (error) {
       console.error('Error loading clubs:', error);
-      Alert.alert('Error', 'No se pudo cargar los clubes');
+      // Silenciar el error y usar datos vacíos como fallback
+      setMyClubs([]);
     } finally {
       setLoading(false);
     }

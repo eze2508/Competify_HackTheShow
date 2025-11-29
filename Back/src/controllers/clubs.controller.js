@@ -25,10 +25,11 @@ exports.createClub = async (req, res) => {
 exports.joinClub = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { clubId } = req.body;
-    if (!clubId) return res.status(400).json({ error: 'clubId_required' });
+    const { clubId, club_id } = req.body;
+    const targetClubId = clubId || club_id;
+    if (!targetClubId) return res.status(400).json({ error: 'clubId_required' });
 
-    const result = await clubsSvc.joinClubService({ userId, clubId });
+    const result = await clubsSvc.joinClubService({ userId, clubId: targetClubId });
     if (result.error) {
       const code = result.error.code;
       if (code === 'already_in_club') return res.status(400).json({ error: 'already_in_club' });
@@ -46,11 +47,17 @@ exports.joinClub = async (req, res) => {
 exports.leaveClub = async (req, res) => {
   try {
     const userId = req.user.id;
-    // determine user's current club
-    const { data: member } = await require('../db/supabase').getMemberByUserId(userId);
-    if (!member) return res.status(400).json({ error: 'not_in_club' });
-
-    const clubId = member.club_id;
+    const { clubId, club_id } = req.body;
+    const targetClubId = clubId || club_id;
+    
+    // If no clubId provided, determine user's current club
+    let finalClubId = targetClubId;
+    if (!finalClubId) {
+      const { data: member } = await require('../db/supabase').getMemberByUserId(userId);
+      if (!member) return res.status(400).json({ error: 'not_in_club' });
+      finalClubId = member.club_id;
+    }
+    const clubId = finalClubId;
     const result = await clubsSvc.leaveClubService({ userId, clubId });
     if (result.error) {
       const code = result.error.code;
