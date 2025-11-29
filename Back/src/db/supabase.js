@@ -184,26 +184,54 @@ async function getFriendRequest(requestId) {
 }
 
 async function acceptFriendRequest(requestId) {
-  return supabase.from('friend_requests')
+  const result = await supabase.from('friend_requests')
     .update({ status: 'accepted' })
     .eq('id', requestId);
+  
+  if (result.error) {
+    console.error('Error accepting friend request:', result.error);
+    throw result.error;
+  }
+  
+  return result;
 }
 
 async function rejectFriendRequest(requestId) {
-  return supabase.from('friend_requests')
+  const result = await supabase.from('friend_requests')
     .update({ status: 'rejected' })
     .eq('id', requestId);
+  
+  if (result.error) {
+    console.error('Error rejecting friend request:', result.error);
+    throw result.error;
+  }
+  
+  return result;
 }
 
 async function deleteFriendRequest(requestId) {
-  return supabase.from('friend_requests').delete().eq('id', requestId);
+  const result = await supabase.from('friend_requests').delete().eq('id', requestId);
+  
+  if (result.error) {
+    console.error('Error deleting friend request:', result.error);
+    throw result.error;
+  }
+  
+  return result;
 }
 
 async function insertFriendsRelation(userId1, userId2) {
-  return supabase.from('friends').insert({
+  const result = await supabase.from('friends').insert({
     user1: userId1,
     user2: userId2
   }).select().single();
+  
+  if (result.error) {
+    console.error('Error inserting friends relation:', result.error);
+    throw result.error;
+  }
+  
+  return result;
 }
 
 async function listFriends(userId) {
