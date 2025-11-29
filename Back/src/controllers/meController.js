@@ -215,3 +215,75 @@ exports.stats = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+exports.topArtists = async (req, res) => {
+  const user = req.user;
+  try {
+    console.log('🔵 [TopArtists] Obteniendo top artistas para user_id:', user.id);
+
+    // Get all sessions with artist info and aggregate by artist
+    const { data: sessions, error } = await supabase
+      .from('listening_sessions')
+      .select('artist_name, artist_id, total_ms')
+      .eq('user_id', user.id)
+      .not('artist_name', 'is', null);
+
+    if (error) {
+      console.error('🔴 [TopArtists] Error:', error);
+      return res.status(500).json({ error: 'Error fetching artists' });
+    }
+
+    console.log('🟢 [TopArtists] Sesiones encontradas:', sessions?.length || 0);
+
+    // Aggregate by artist
+    const artistMap = new Map();
+    (sessions || []).forEach(session => {
+      const artist = session.artist_name;
+      const current = artistMap.get(artist) || { 
+        name: artist, 
+        artist_id: session.artist_id,
+        total_ms: 0 
+      };
+      current.total_ms += session.total_ms || 0;
+      artistMap.set(artist, current);
+    });
+
+    // Convert to array and sort
+    const topArtists = Array.from(artistMap.values())
+      .sort((a, b) => b.total_ms - a.total_ms)
+      .slice(0, 5)
+      .map((artist, index) => {
+        const hours = Math.floor(artist.total_ms / (1000 * 60 * 60));
+        console.log(`🟢 [TopArtists] #${index + 1}: ${artist.name} - ${hours}h`);
+        return {
+          id: artist.artist_id || artist.name,
+          name: artist.name,
+          hours: hours,
+          total_ms: artist.total_ms
+        };
+      });
+
+    // Get images from Spotify API for the top artists
+    if (user.access_token) {
+      const axios = require('axios');
+      for (let artist of topArtists) {
+        if (artist.id && artist.id !== artist.name) {
+          try {
+            const spotifyArtist = await axios.get(`https://api.spotify.com/v1/artists/${artist.id}`, {
+              headers: { Authorization: `Bearer ${user.access_token}` }
+            });
+            artist.image_url = spotifyArtist.data.images?.[0]?.url || null;
+          } catch (err) {
+            console.error('Error fetching artist image:', err.message);
+          }
+        }
+      }
+    }
+
+    console.log('🟢 [TopArtists] Respuesta final:', topArtists.length, 'artistas');
+    res.json({ artists: topArtists });
+  } catch (err) {
+    console.error('🔴 [TopArtists] Error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

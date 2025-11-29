@@ -71,15 +71,15 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
       console.log('🔵 [Profile] Cargando datos del perfil...');
-      const [user, artists] = await Promise.all([
+      const [user, realArtists, spotifyArtists] = await Promise.all([
         ApiService.getCurrentUser(),
+        ApiService.getTopArtistsReal().catch(() => []),
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
       
       console.log('🟢 [Profile] Datos recibidos:', JSON.stringify({
         user_id: user.id,
         username: user.username,
-        // backend snake_case or ApiService mapped camelCase
         total_hours: user.total_hours ?? user.totalHours,
         total_ms: user.total_ms ?? user.totalMs ?? user.totalMilliseconds,
         current_month_hours: user.current_month_hours ?? user.currentMonthHours,
@@ -88,9 +88,13 @@ export default function ProfileScreen() {
         rank: user.rank
       }, null, 2));
       
+      console.log('🟢 [Profile] Artistas reales:', realArtists.length);
+      console.log('🟢 [Profile] Artistas Spotify:', spotifyArtists.length);
+      
       setUserId(user.id);
       setUserData(user);
-      setTopArtists(artists);
+      // Priorizar artistas reales si existen, sino usar Spotify
+      setTopArtists(realArtists.length > 0 ? realArtists : spotifyArtists);
     } catch (error) {
       console.error('🔴 [Profile] Error loading profile data:', error);
       Alert.alert('Error', `No se pudo cargar el perfil: ${error.message}`);
@@ -103,8 +107,9 @@ export default function ProfileScreen() {
     setRefreshing(true);
     try {
       console.log('🔵 [Profile] Refrescando datos del perfil...');
-      const [user, artists] = await Promise.all([
+      const [user, realArtists, spotifyArtists] = await Promise.all([
         ApiService.getCurrentUser(),
+        ApiService.getTopArtistsReal().catch(() => []),
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
       
@@ -118,7 +123,7 @@ export default function ProfileScreen() {
       
       setUserId(user.id);
       setUserData(user);
-      setTopArtists(artists);
+      setTopArtists(realArtists.length > 0 ? realArtists : spotifyArtists);
     } catch (error) {
       console.error('🔴 [Profile] Error refreshing profile data:', error);
       Alert.alert('Error', `No se pudo actualizar el perfil: ${error.message}`);
@@ -195,10 +200,18 @@ export default function ProfileScreen() {
               style={styles.borderImage}
               resizeMode="contain"
             />
-            <Image 
-              source={{ uri: displayData.avatarUrl }} 
-              style={styles.avatar}
-            />
+            {displayData.avatarUrl && !displayData.avatarUrl.includes('pravatar') ? (
+              <Image 
+                source={{ uri: displayData.avatarUrl }} 
+                style={styles.avatar}
+              />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <ThemedText style={styles.avatarInitial}>
+                  {displayData.username.charAt(0).toUpperCase()}
+                </ThemedText>
+              </View>
+            )}
           </View>
           <ThemedText style={styles.username}>{displayData.username}</ThemedText>
           <ThemedText style={styles.rankText}>{displayData.rank.toUpperCase()}</ThemedText>
@@ -375,6 +388,24 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 55,
     zIndex: 1,
+  },
+  avatarPlaceholder: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: SpotifyColors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    overflow: 'visible',
+  },
+  avatarInitial: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: SpotifyColors.white,
+    lineHeight: 52,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   username: {
     fontSize: 28,

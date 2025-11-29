@@ -140,6 +140,15 @@ export class ApiService {
   }
 
   /**
+   * Obtiene los artistas más escuchados con datos reales de listening_sessions
+   */
+  static async getTopArtistsReal(): Promise<any[]> {
+    const data = await fetchWithAuth('/me/top-artists');
+    console.log('🟢 [API] Top artistas reales recibidos:', data);
+    return data.artists || [];
+  }
+
+  /**
    * Obtiene artistas para descubrir (recomendaciones)
    */
   static async getDiscoverArtists(): Promise<Artist[]> {
