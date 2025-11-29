@@ -4,9 +4,11 @@ import { ThemedText } from '../themed-text';
 import { SpotifyColors } from '@/constants/theme';
 
 const checkIcon = require('@/assets/images/check.png');
+const musicalNoteIcon = require('@/assets/images/musical-note.png');
 
 const screenWidth = Dimensions.get('window').width;
 const cardWidth = (screenWidth - 48) / 2.5; // Para que entren 2.5 cards
+const searchCardWidth = (screenWidth - 48) / 2; // Para búsqueda: 2 cards por fila con padding 16px a cada lado
 
 interface ArtistCardProps {
   id: string;
@@ -17,11 +19,14 @@ interface ArtistCardProps {
   isTracked?: boolean;
   onToggleTrack?: () => void;
   onPress?: () => void;
+  variant?: 'default' | 'search';
 }
 
-export function ArtistCard({ name, imageUrl, genres, followers, isTracked = false, onToggleTrack, onPress }: ArtistCardProps) {
+export function ArtistCard({ name, imageUrl, genres, followers, isTracked = false, onToggleTrack, onPress, variant = 'default' }: ArtistCardProps) {
+  const [imageError, setImageError] = React.useState(false);
+
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, variant === 'search' && styles.searchWrapper]}>
       <Pressable
         style={({ pressed }) => [
           styles.container,
@@ -29,7 +34,17 @@ export function ArtistCard({ name, imageUrl, genres, followers, isTracked = fals
         ]}
         onPress={onPress}
       >
-        <Image source={{ uri: imageUrl }} style={styles.image} />
+        {!imageError && imageUrl ? (
+          <Image 
+            source={{ uri: imageUrl }} 
+            style={styles.image}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <View style={[styles.image, styles.imagePlaceholder]}>
+            <Image source={musicalNoteIcon} style={styles.placeholderIcon} />
+          </View>
+        )}
         <View style={styles.info}>
           <ThemedText style={styles.name} numberOfLines={1}>
             {name}
@@ -72,6 +87,11 @@ const styles = StyleSheet.create({
     marginRight: 12,
     position: 'relative',
   },
+  searchWrapper: {
+    width: searchCardWidth,
+    marginRight: 0,
+    marginBottom: 12,
+  },
   container: {
     width: '100%',
     backgroundColor: SpotifyColors.black,
@@ -85,6 +105,16 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 1,
     borderRadius: 4,
+  },
+  imagePlaceholder: {
+    backgroundColor: SpotifyColors.darkGray,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderIcon: {
+    width: 40,
+    height: 40,
+    opacity: 0.5,
   },
   info: {
     padding: 8,

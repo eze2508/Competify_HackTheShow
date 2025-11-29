@@ -117,6 +117,7 @@ export default function SearchScreen() {
                 isTracked={trackedArtistIds.includes(artist.id)}
                 onToggleTrack={() => toggleTrackArtist(artist)}
                 onPress={() => console.log('Pressed artist:', artist.name)}
+                variant="search"
               />
             ))}
             {artists.length === 0 && !loading && (
@@ -166,7 +167,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   emptyState: {
     alignItems: 'center',

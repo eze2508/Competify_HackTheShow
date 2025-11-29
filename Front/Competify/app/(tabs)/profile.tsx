@@ -22,6 +22,18 @@ const statsIcons = {
 };
 
 // Mock data - reemplazar con datos reales de la API
+// Función para obtener el color del borde según el rango
+const getRankBorderColor = (rank: VinylRank) => {
+  switch (rank) {
+    case 'bronze': return '#CD7F32';
+    case 'silver': return '#C0C0C0';
+    case 'gold': return '#FFD700';
+    case 'platinum': return '#E5E4E2';
+    case 'diamond': return '#B9F2FF';
+    default: return SpotifyColors.green;
+  }
+};
+
 const MOCK_USER_DATA = {
   username: 'Usuario123',
   avatarUrl: 'https://i.pravatar.cc/300',
@@ -55,12 +67,13 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <Image 
             source={{ uri: MOCK_USER_DATA.avatarUrl }} 
-            style={styles.avatar}
+            style={[
+              styles.avatar,
+              { borderColor: getRankBorderColor(MOCK_USER_DATA.rank) }
+            ]}
           />
           <ThemedText style={styles.username}>{MOCK_USER_DATA.username}</ThemedText>
-          <View style={styles.vinylContainer}>
-            <VinylBadge rank={MOCK_USER_DATA.rank} size="medium" />
-          </View>
+          <ThemedText style={styles.rankText}>{MOCK_USER_DATA.rank.toUpperCase()}</ThemedText>
         </View>
 
         {/* Stats Cards */}
@@ -162,17 +175,19 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     marginBottom: 16,
-    borderWidth: 4,
-    borderColor: SpotifyColors.green,
+    borderWidth: 5,
   },
   username: {
     fontSize: 28,
     fontWeight: 'bold',
     color: SpotifyColors.white,
-    marginBottom: 16,
+    marginBottom: 8,
   },
-  vinylContainer: {
-    marginTop: 8,
+  rankText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: SpotifyColors.lightGray,
+    letterSpacing: 2,
   },
   section: {
     padding: 16,

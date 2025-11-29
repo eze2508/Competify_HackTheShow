@@ -112,14 +112,15 @@ export default function ArtistsScreen() {
   };
 
   const artistSections = [
-    { title: 'Your Top Picks', artists: filterArtistsByGenre(topArtists) },
-    { title: 'Your Tracked Artists', artists: filterArtistsByGenre(trackedArtists) },
+    { id: 'top-picks', title: 'Your Top Picks', artists: filterArtistsByGenre(topArtists) },
+    { id: 'tracked', title: 'Your Tracked Artists', artists: filterArtistsByGenre(trackedArtists) },
     { 
+      id: 'similar',
       title: similarBasedOn ? `Similar Vibes to ${similarBasedOn}` : 'Similar Vibes', 
       artists: filterArtistsByGenre(similarArtists) 
     },
-    { title: 'Discover', artists: filterArtistsByGenre(discoverArtists) },
-    { title: 'All Time Favorites', artists: filterArtistsByGenre(longTermArtists) },
+    { id: 'discover', title: 'Discover', artists: filterArtistsByGenre(discoverArtists) },
+    { id: 'favorites', title: 'All Time Favorites', artists: filterArtistsByGenre(longTermArtists) },
   ];
   if (loading) {
     return (
@@ -209,11 +210,11 @@ export default function ArtistsScreen() {
 
       {/* Sections */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {artistSections.map((section, index) => {
+        {artistSections.map((section) => {
           // Mostrar mensaje especial para Tracked Artists si está vacío
-          if (section.title === 'Your Tracked Artists' && section.artists.length === 0) {
+          if (section.id === 'tracked' && section.artists.length === 0) {
             return (
-              <View key={index} style={styles.section}>
+              <View key={section.id} style={styles.section}>
                 <ThemedText style={styles.sectionTitle}>{section.title}</ThemedText>
                 <View style={styles.emptyTrackedContainer}>
                   <ThemedText style={styles.emptyTrackedText}>
@@ -228,7 +229,7 @@ export default function ArtistsScreen() {
           }
 
           return section.artists.length > 0 ? (
-            <View key={index} style={styles.section}>
+            <View key={section.id} style={styles.section}>
               <ThemedText style={styles.sectionTitle}>{section.title}</ThemedText>
               <FlatList
                 horizontal
@@ -245,7 +246,7 @@ export default function ArtistsScreen() {
                     onPress={() => console.log('Pressed artist:', item.name)}
                   />
                 )}
-                keyExtractor={item => item.id}
+                keyExtractor={(item) => `${section.id}-${item.id}`}
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalList}
               />
