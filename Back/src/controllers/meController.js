@@ -70,44 +70,72 @@ exports.profile = async (req, res) => {
     const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+    console.log('🔵 [Profile] Obteniendo sesiones de escucha para user_id:', user.id);
+
     // Total hours (all time)
-    const { data: totalData } = await supabase
+    const { data: totalData, error: totalError } = await supabase
       .from('listening_sessions')
       .select('total_ms')
       .eq('user_id', user.id);
     
+    if (totalError) {
+      console.error('🔴 [Profile] Error obteniendo listening_sessions:', totalError);
+    }
+    
+    console.log('🟢 [Profile] Sesiones totales encontradas:', totalData?.length || 0);
+    console.log('🟢 [Profile] Primera sesión:', totalData?.[0]);
+    console.log('🟢 [Profile] Última sesión:', totalData?.[totalData?.length - 1]);
+    
     const totalMs = (totalData || []).reduce((sum, session) => sum + (session.total_ms || 0), 0);
     const totalHours = Math.floor(totalMs / (1000 * 60 * 60));
+    
+    console.log('🟢 [Profile] Total ms acumulado:', totalMs);
+    console.log('🟢 [Profile] Total horas:', totalHours);
 
     // Current month hours
-    const { data: monthData } = await supabase
+    const { data: monthData, error: monthError } = await supabase
       .from('listening_sessions')
       .select('total_ms')
       .eq('user_id', user.id)
       .gte('started_at', oneMonthAgo.toISOString());
     
+    if (monthError) {
+      console.error('🔴 [Profile] Error obteniendo sesiones del mes:', monthError);
+    }
+    
     const monthMs = (monthData || []).reduce((sum, session) => sum + (session.total_ms || 0), 0);
     const monthHours = Math.floor(monthMs / (1000 * 60 * 60));
+    console.log('🟢 [Profile] Sesiones este mes:', monthData?.length, 'Total ms:', monthMs);
 
     // Current week hours
-    const { data: weekData } = await supabase
+    const { data: weekData, error: weekError } = await supabase
       .from('listening_sessions')
       .select('total_ms')
       .eq('user_id', user.id)
       .gte('started_at', oneWeekAgo.toISOString());
     
+    if (weekError) {
+      console.error('🔴 [Profile] Error obteniendo sesiones de la semana:', weekError);
+    }
+    
     const weekMs = (weekData || []).reduce((sum, session) => sum + (session.total_ms || 0), 0);
     const weekHours = Math.floor(weekMs / (1000 * 60 * 60));
+    console.log('🟢 [Profile] Sesiones esta semana:', weekData?.length, 'Total ms:', weekMs);
 
     // Total unique artists
-    const { data: artistsData } = await supabase
+    const { data: artistsData, error: artistsError } = await supabase
       .from('listening_sessions')
       .select('track_id')
       .eq('user_id', user.id);
     
+    if (artistsError) {
+      console.error('🔴 [Profile] Error obteniendo tracks únicos:', artistsError);
+    }
+    
     // Get unique track IDs (as a proxy for unique artists - could be improved)
     const uniqueTracks = new Set((artistsData || []).map(s => s.track_id));
     const totalArtists = uniqueTracks.size;
+    console.log('🟢 [Profile] Tracks únicos:', totalArtists);
 
     // Calculate rank based on total hours
     let rank = 'bronze';
@@ -116,7 +144,7 @@ exports.profile = async (req, res) => {
     else if (totalHours >= 100) rank = 'gold';
     else if (totalHours >= 50) rank = 'silver';
 
-    res.json({
+    const responseData = {
       user_id: user.id,
       spotify_id: user.spotify_id,
       username: spotifyProfile.data.display_name || user.spotify_id,
@@ -127,7 +155,10 @@ exports.profile = async (req, res) => {
       current_month_hours: monthHours,
       current_week_hours: weekHours,
       total_artists: totalArtists
-    });
+    };
+
+    console.log('🟢 [Profile] Respuesta final:', JSON.stringify(responseData, null, 2));
+    res.json(responseData);
   } catch (err) {
     console.error('Profile error:', err.response?.data || err.message);
     res.status(500).json({ error: 'Server error' });

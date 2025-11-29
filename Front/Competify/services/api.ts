@@ -106,18 +106,22 @@ export class ApiService {
    */
   static async getCurrentUser(): Promise<User> {
     const data = await fetchWithAuth('/me/profile');
+    console.log('🔵 [API] Respuesta del backend /me/profile:', data);
     // Mapear respuesta del backend al tipo User
-    return {
+    const mappedUser = {
       id: String(data.user_id), // Convertir a string
       spotifyId: data.spotify_id || '',
       username: data.username || 'Usuario',
       avatarUrl: data.avatar_url || 'https://i.pravatar.cc/300',
       rank: data.rank || 'bronze' as VinylRank,
       totalHours: data.total_hours || 0,
+      total_ms: data.total_ms || 0,
       currentMonthHours: data.current_month_hours || 0,
       currentWeekHours: data.current_week_hours || 0,
       totalArtists: data.total_artists || 0,
     };
+    console.log('🟢 [API] Usuario mapeado:', mappedUser);
+    return mappedUser;
   }
 
   /**

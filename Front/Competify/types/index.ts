@@ -8,6 +8,7 @@ export interface User {
   avatarUrl?: string;
   rank: VinylRank;
   totalHours: number;
+  total_ms?: number;
   currentMonthHours: number;
   currentWeekHours: number;
   totalArtists: number;

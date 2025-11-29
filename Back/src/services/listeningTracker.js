@@ -51,11 +51,13 @@ async function handleUser(user) {
       ended_at: null,
       total_ms: 0
     };
+    console.log('🔵 [Tracker] Insertando nueva sesión:', { user_id: user.id, track_id: trackId, track_name: track.name });
     const { data: inserted, error } = await supabase.from('listening_sessions').insert(insert).select().single();
     if (error) {
-      console.error('Failed to insert session', error);
+      console.error('🔴 [Tracker] Failed to insert session', error);
       return;
     }
+    console.log('🟢 [Tracker] Sesión insertada con ID:', inserted.id);
     activeMap.set(user.id, { trackId, startedAt: new Date(inserted.started_at), sessionId: inserted.id, ended: false });
   } catch (err) {
     // If token invalid, we'll try again next tick
@@ -67,14 +69,19 @@ async function closeSession(userId, active) {
   try {
     const endedAt = new Date().toISOString();
     const totalMs = Date.now() - new Date(active.startedAt).getTime();
+    console.log('🔵 [Tracker] Cerrando sesión:', { userId, sessionId: active.sessionId, totalMs: Math.floor(totalMs) });
     const { error } = await supabase.from('listening_sessions').update({
       ended_at: endedAt,
       total_ms: Math.max(0, Math.floor(totalMs))
     }).eq('id', active.sessionId);
-    if (error) console.error('Error updating session', error);
+    if (error) {
+      console.error('🔴 [Tracker] Error updating session', error);
+    } else {
+      console.log('🟢 [Tracker] Sesión cerrada exitosamente');
+    }
     active.ended = true;
   } catch (err) {
-    console.error('closeSession error', err);
+    console.error('🔴 [Tracker] closeSession error', err);
   }
 }
 

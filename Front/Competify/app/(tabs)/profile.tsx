@@ -70,16 +70,29 @@ export default function ProfileScreen() {
   const loadProfileData = async () => {
     try {
       setLoading(true);
+      console.log('🔵 [Profile] Cargando datos del perfil...');
       const [user, artists] = await Promise.all([
         ApiService.getCurrentUser(),
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
       
+      console.log('🟢 [Profile] Datos recibidos:', JSON.stringify({
+        user_id: user.id,
+        username: user.username,
+        total_hours: user.total_hours,
+        total_ms: user.total_ms,
+        current_month_hours: user.current_month_hours,
+        current_week_hours: user.current_week_hours,
+        total_artists: user.total_artists,
+        rank: user.rank
+      }, null, 2));
+      
       setUserId(user.id);
       setUserData(user);
       setTopArtists(artists);
     } catch (error) {
-      console.error('Error loading profile data:', error);
+      console.error('🔴 [Profile] Error loading profile data:', error);
+      Alert.alert('Error', `No se pudo cargar el perfil: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -88,17 +101,26 @@ export default function ProfileScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
+      console.log('🔵 [Profile] Refrescando datos del perfil...');
       const [user, artists] = await Promise.all([
         ApiService.getCurrentUser(),
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
       
+      console.log('🟢 [Profile] Datos refrescados:', JSON.stringify({
+        total_hours: user.total_hours,
+        total_ms: user.total_ms,
+        current_month_hours: user.current_month_hours,
+        current_week_hours: user.current_week_hours,
+        total_artists: user.total_artists
+      }, null, 2));
+      
       setUserId(user.id);
       setUserData(user);
       setTopArtists(artists);
     } catch (error) {
-      console.error('Error refreshing profile data:', error);
-      Alert.alert('Error', 'No se pudo actualizar el perfil');
+      console.error('🔴 [Profile] Error refreshing profile data:', error);
+      Alert.alert('Error', `No se pudo actualizar el perfil: ${error.message}`);
     } finally {
       setRefreshing(false);
     }
@@ -126,7 +148,27 @@ export default function ProfileScreen() {
     );
   }
 
-  const displayData = userData || MOCK_USER_DATA;
+  const displayData = userData ? {
+    ...userData,
+    username: userData.username || userData.display_name || 'Usuario',
+    avatarUrl: userData.avatar_url || userData.avatarUrl || 'https://i.pravatar.cc/300',
+    totalHours: userData.total_hours || 0,
+    total_ms: userData.total_ms || 0,
+    currentMonthHours: userData.current_month_hours || 0,
+    currentWeekHours: userData.current_week_hours || 0,
+    totalArtists: userData.total_artists || 0,
+    rank: userData.rank || 'bronze'
+  } : MOCK_USER_DATA;
+  
+  console.log('🟡 [Profile] displayData final:', {
+    usando_mock: !userData,
+    totalHours: displayData.totalHours,
+    total_ms: displayData.total_ms,
+    currentMonthHours: displayData.currentMonthHours,
+    currentWeekHours: displayData.currentWeekHours,
+    totalArtists: displayData.totalArtists
+  });
+  
   const displayArtists = topArtists.length > 0 ? topArtists : MOCK_USER_DATA.topArtists;
 
   return (
