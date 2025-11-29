@@ -1,10 +1,12 @@
 import React from 'react';
-import { StyleSheet, ScrollView, View, Image } from 'react-native';
+import { StyleSheet, ScrollView, View, Image, Pressable } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { StatsCard } from '@/components/ui/stats-card';
 import { VinylBadge, VinylRank } from '@/components/ui/vinyl-badge';
 import { SpotifyColors } from '@/constants/theme';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 const achievementIcons = {
   trophy: require('@/assets/images/trophy.png'),
@@ -38,6 +40,14 @@ const MOCK_USER_DATA = {
 };
 
 export default function ProfileScreen() {
+  const { logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    // El AuthContext se encargará de redirigir al login
+  };
+
   return (
     <ThemedView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -117,6 +127,19 @@ export default function ProfileScreen() {
               <ThemedText style={styles.achievementText}>100 artistas</ThemedText>
             </View>
           </View>
+        </View>
+
+        {/* Logout Button */}
+        <View style={styles.section}>
+          <Pressable 
+            style={({ pressed }) => [
+              styles.logoutButton,
+              pressed && styles.logoutButtonPressed
+            ]}
+            onPress={handleLogout}
+          >
+            <ThemedText style={styles.logoutButtonText}>Cerrar Sesión</ThemedText>
+          </Pressable>
         </View>
       </ScrollView>
     </ThemedView>
@@ -227,5 +250,21 @@ const styles = StyleSheet.create({
     color: SpotifyColors.white,
     textAlign: 'center',
     fontWeight: '600',
+  },
+  logoutButton: {
+    backgroundColor: SpotifyColors.mediumGray,
+    paddingVertical: 16,
+    borderRadius: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: SpotifyColors.lightGray,
+  },
+  logoutButtonPressed: {
+    opacity: 0.7,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: SpotifyColors.white,
   },
 });

@@ -8,6 +8,9 @@
     "scheme": "competify",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "apiUrl": "https://competify-hacktheshow.onrender.com"
+    },
     "ios": {
       "supportsTablet": true
     },

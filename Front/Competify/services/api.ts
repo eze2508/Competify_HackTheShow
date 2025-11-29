@@ -1,55 +1,180 @@
 import { Artist, TopArtist, RankingEntry, User, TimePeriod } from '@/types';
 import { VinylRank } from '@/components/ui/vinyl-badge';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 /**
- * Mock API Service
- * Este servicio simula las llamadas a la API de Spotify y al backend.
- * Reemplazar con llamadas reales cuando se integre la API.
+ * API Service - Conectado con el backend
  */
 
-// Simula un delay de red
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// URL del backend - usar la configurada en app.json o localhost en desarrollo
+const API_BASE_URL = Constants.expoConfig?.extra?.apiUrl || 
+  (__DEV__ ? 'http://localhost:4000' : 'https://competify-hacktheshow.onrender.com');
+
+// Storage keys
+const TOKEN_KEY = '@auth_token';
+
+/**
+ * Obtiene el token JWT almacenado
+ */
+async function getAuthToken(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(TOKEN_KEY);
+  } catch (error) {
+    console.error('Error getting token:', error);
+    return null;
+  }
+}
+
+/**
+ * Guarda el token JWT
+ */
+export async function setAuthToken(token: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(TOKEN_KEY, token);
+  } catch (error) {
+    console.error('Error saving token:', error);
+  }
+}
+
+/**
+ * Elimina el token JWT
+ */
+export async function clearAuthToken(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(TOKEN_KEY);
+  } catch (error) {
+    console.error('Error clearing token:', error);
+  }
+}
+
+/**
+ * Realiza una petición autenticada al backend
+ */
+async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<any> {
+  const token = await getAuthToken();
+  
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    ...options.headers,
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Token inválido o expirado
+      await clearAuthToken();
+      throw new Error('Session expired. Please login again.');
+    }
+    throw new Error(`API Error: ${response.status}`);
+  }
+
+  return response.json();
+}
 
 export class ApiService {
   /**
-   * Obtiene el perfil del usuario actual
+   * Inicia el flujo de autenticación con Spotify
+   */
+  static getLoginUrl(): string {
+    return `${API_BASE_URL}/auth/login`;
+  }
+
+  /**
+   * Obtiene el perfil del usuario actual desde el backend
    */
   static async getCurrentUser(): Promise<User> {
-    await delay(500);
-    
+    const data = await fetchWithAuth('/me/current');
+    // Mapear respuesta del backend al tipo User
     return {
-      id: '1',
-      spotifyId: 'spotify:user:123',
-      username: 'Usuario123',
-      avatarUrl: 'https://i.pravatar.cc/300',
-      rank: 'gold' as VinylRank,
-      totalHours: 1234,
-      currentMonthHours: 87,
-      currentWeekHours: 23,
-      totalArtists: 156,
+      id: data.user_id || '1',
+      spotifyId: data.spotify_id || '',
+      username: data.username || 'Usuario',
+      avatarUrl: data.avatar_url || 'https://i.pravatar.cc/300',
+      rank: data.rank || 'bronze' as VinylRank,
+      totalHours: data.total_hours || 0,
+      currentMonthHours: data.current_month_hours || 0,
+      currentWeekHours: data.current_week_hours || 0,
+      totalArtists: data.total_artists || 0,
     };
   }
 
   /**
-   * Obtiene los artistas más escuchados del usuario
+   * Obtiene estadísticas del usuario
    */
-  static async getTopArtists(limit: number = 5): Promise<TopArtist[]> {
-    await delay(500);
-    
-    return [
-      { id: '1', name: 'Taylor Swift', imageUrl: 'https://picsum.photos/200', genres: ['pop'], hours: 245 },
-      { id: '2', name: 'The Weeknd', imageUrl: 'https://picsum.photos/201', genres: ['r&b'], hours: 198 },
-      { id: '3', name: 'Bad Bunny', imageUrl: 'https://picsum.photos/202', genres: ['reggaeton'], hours: 176 },
-      { id: '4', name: 'Drake', imageUrl: 'https://picsum.photos/203', genres: ['hip hop'], hours: 154 },
-      { id: '5', name: 'Rosalía', imageUrl: 'https://picsum.photos/204', genres: ['flamenco'], hours: 132 },
-    ].slice(0, limit);
+  static async getUserStats(): Promise<any> {
+    return await fetchWithAuth('/me/stats');
+  }
+
+  /**
+   * Obtiene los artistas más escuchados del usuario desde Spotify
+   */
+  static async getTopArtists(limit: number = 20, timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term'): Promise<Artist[]> {
+    const data = await fetchWithAuth(`/artists/top?limit=${limit}&time_range=${timeRange}`);
+    return data;
+  }
+
+  /**
+   * Obtiene artistas para descubrir (recomendaciones)
+   */
+  static async getDiscoverArtists(): Promise<Artist[]> {
+    const data = await fetchWithAuth('/artists/discover');
+    return data;
+  }
+
+  /**
+   * Obtiene los artistas trackeados por el usuario
+   */
+  static async getTrackedArtists(): Promise<Artist[]> {
+    const data = await fetchWithAuth('/artists/tracked');
+    return data.map((item: any) => ({
+      id: item.artist_id,
+      name: item.artist_name,
+      imageUrl: item.artist_image_url,
+      genres: item.genres || [],
+      followers: 0
+    }));
+  }
+
+  /**
+   * Trackear un artista
+   */
+  static async trackArtist(artist: Artist): Promise<void> {
+    await fetchWithAuth('/artists/track', {
+      method: 'POST',
+      body: JSON.stringify({
+        artistId: artist.id,
+        artistName: artist.name,
+        artistImageUrl: artist.imageUrl,
+        genres: artist.genres
+      })
+    });
+  }
+
+  /**
+   * Dejar de trackear un artista
+   */
+  static async untrackArtist(artistId: string): Promise<void> {
+    await fetchWithAuth(`/artists/track/${artistId}`, {
+      method: 'DELETE'
+    });
   }
 
   /**
    * Obtiene el ranking global por período
    */
   static async getRanking(period: TimePeriod): Promise<RankingEntry[]> {
-    await delay(500);
+    // Mock data - TODO: implementar endpoint real
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     const rankings = {
       week: [
@@ -78,7 +203,8 @@ export class ApiService {
    * Busca artistas por nombre o género
    */
   static async searchArtists(query: string = '', genre?: string): Promise<Artist[]> {
-    await delay(500);
+    // Mock data - TODO: implementar endpoint real
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     const allArtists: Artist[] = [
       { id: '1', name: 'Taylor Swift', imageUrl: 'https://picsum.photos/200', genres: ['pop', 'country'], followers: 92000000 },
@@ -112,7 +238,7 @@ export class ApiService {
    * Obtiene artistas recomendados
    */
   static async getRecommendedArtists(limit: number = 12): Promise<Artist[]> {
-    await delay(500);
+    await new Promise(resolve => setTimeout(resolve, 500));
     return this.searchArtists('', undefined).then(artists => artists.slice(0, limit));
   }
 

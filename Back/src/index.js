@@ -9,6 +9,7 @@ const listeningTracker = require('./services/listeningTracker');
 const searchRoutes = require('./routes/search');
 const tracksRoutes = require('./routes/tracks');
 const spotifyRoutes = require('./routes/spotify.routes');
+const artistsRoutes = require('./routes/artists');
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -34,6 +35,7 @@ app.use('/me', meRoutes);
 app.use('/search', searchRoutes);   
 app.use('/tracks', tracksRoutes);
 app.use('/spotify', spotifyRoutes);
+app.use('/artists', artistsRoutes);
 
 app.use(express.static('public'));
 

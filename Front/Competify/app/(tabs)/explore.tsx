@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
-import { StyleSheet, ScrollView, View, FlatList, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, ScrollView, View, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ArtistCard } from '@/components/ui/artist-card';
 import { SpotifyColors } from '@/constants/theme';
+import { ApiService } from '@/services/api';
+import { Artist } from '@/types';
 
-// Mock data - reemplazar con datos reales de la API de Spotify
-const MOCK_ARTISTS = [
+const GENRE_FILTERS = ['All', 'Pop', 'Hip Hop', 'Reggaeton', 'R&B', 'Latin', 'Alternative', 'Rock'];
+
+// Mock data de fallback
+const MOCK_ARTISTS: Artist[] = [
   { id: '1', name: 'Taylor Swift', imageUrl: 'https://picsum.photos/200', genres: ['pop', 'country'], followers: 92000000 },
   { id: '2', name: 'The Weeknd', imageUrl: 'https://picsum.photos/201', genres: ['r&b', 'pop'], followers: 78000000 },
   { id: '3', name: 'Bad Bunny', imageUrl: 'https://picsum.photos/202', genres: ['reggaeton', 'latin'], followers: 74000000 },
@@ -17,28 +21,94 @@ const MOCK_ARTISTS = [
   { id: '8', name: 'Billie Eilish', imageUrl: 'https://picsum.photos/207', genres: ['pop', 'alternative'], followers: 64000000 },
 ];
 
-const GENRE_FILTERS = ['All', 'Pop', 'Hip Hop', 'Reggaeton', 'R&B', 'Latin', 'Alternative'];
-
-const getArtistSections = (trackedIds: string[]) => [
-  { title: 'Your Top Picks', artists: MOCK_ARTISTS.slice(0, 5) },
-  { title: 'Your Tracked Artists', artists: MOCK_ARTISTS.filter(a => trackedIds.includes(a.id)) },
-  { title: 'Similar Vibes', artists: MOCK_ARTISTS.slice(1, 6) },
-  { title: 'Trending Now', artists: MOCK_ARTISTS.slice(3, 8) },
-];
-
 export default function ArtistsScreen() {
   const [selectedGenre, setSelectedGenre] = useState('All');
-  const [trackedArtists, setTrackedArtists] = useState<string[]>(['1', '3']); // IDs de artistas trackeados
+  const [loading, setLoading] = useState(true);
+  const [trackedArtistIds, setTrackedArtistIds] = useState<string[]>([]);
+  
+  // Artistas de diferentes secciones
+  const [topArtists, setTopArtists] = useState<Artist[]>([]);
+  const [trackedArtists, setTrackedArtists] = useState<Artist[]>([]);
+  const [discoverArtists, setDiscoverArtists] = useState<Artist[]>([]);
+  const [longTermArtists, setLongTermArtists] = useState<Artist[]>([]);
 
-  const toggleTrackArtist = (artistId: string) => {
-    setTrackedArtists(prev => 
-      prev.includes(artistId) 
-        ? prev.filter(id => id !== artistId)
-        : [...prev, artistId]
+  useEffect(() => {
+    loadArtists();
+  }, []);
+
+  const loadArtists = async () => {
+    try {
+      setLoading(true);
+      
+      // Intentar cargar datos reales del backend
+      const [topShort, tracked, discover, topLong] = await Promise.all([
+        ApiService.getTopArtists(10, 'short_term').catch(() => MOCK_ARTISTS.slice(0, 5)),
+        ApiService.getTrackedArtists().catch(() => []),
+        ApiService.getDiscoverArtists().catch(() => MOCK_ARTISTS.slice(2, 7)),
+        ApiService.getTopArtists(10, 'long_term').catch(() => MOCK_ARTISTS.slice(1, 6))
+      ]);
+
+      setTopArtists(topShort);
+      setTrackedArtists(tracked);
+      setDiscoverArtists(discover);
+      setLongTermArtists(topLong);
+      setTrackedArtistIds(tracked.map(a => a.id));
+    } catch (error) {
+      console.error('Error loading artists:', error);
+      // Si falla todo, usar mock data
+      setTopArtists(MOCK_ARTISTS.slice(0, 5));
+      setDiscoverArtists(MOCK_ARTISTS.slice(2, 7));
+      setLongTermArtists(MOCK_ARTISTS.slice(1, 6));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleTrackArtist = async (artist: Artist) => {
+    const isTracked = trackedArtistIds.includes(artist.id);
+    
+    try {
+      if (isTracked) {
+        await ApiService.untrackArtist(artist.id);
+        setTrackedArtistIds(prev => prev.filter(id => id !== artist.id));
+        setTrackedArtists(prev => prev.filter(a => a.id !== artist.id));
+      } else {
+        await ApiService.trackArtist(artist);
+        setTrackedArtistIds(prev => [...prev, artist.id]);
+        setTrackedArtists(prev => [...prev, artist]);
+      }
+    } catch (error) {
+      console.error('Error toggling track:', error);
+    }
+  };
+
+  const filterArtistsByGenre = (artists: Artist[]) => {
+    if (selectedGenre === 'All') return artists;
+    return artists.filter(artist => 
+      artist.genres?.some(g => g.toLowerCase().includes(selectedGenre.toLowerCase()))
     );
   };
 
-  const artistSections = getArtistSections(trackedArtists);
+  const artistSections = [
+    { title: 'Your Top Picks', artists: filterArtistsByGenre(topArtists) },
+    { title: 'Your Tracked Artists', artists: filterArtistsByGenre(trackedArtists) },
+    { title: 'Discover', artists: filterArtistsByGenre(discoverArtists) },
+    { title: 'All Time Favorites', artists: filterArtistsByGenre(longTermArtists) },
+  ];
+  if (loading) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.header}>
+          <ThemedText style={styles.title}>Artists</ThemedText>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={SpotifyColors.green} />
+          <ThemedText style={styles.loadingText}>Loading your artists...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
@@ -86,8 +156,8 @@ export default function ArtistsScreen() {
                     imageUrl={item.imageUrl}
                     genres={item.genres}
                     followers={item.followers}
-                    isTracked={trackedArtists.includes(item.id)}
-                    onToggleTrack={() => toggleTrackArtist(item.id)}
+                    isTracked={trackedArtistIds.includes(item.id)}
+                    onToggleTrack={() => toggleTrackArtist(item)}
                     onPress={() => console.log('Pressed artist:', item.name)}
                   />
                 )}
@@ -162,5 +232,15 @@ const styles = StyleSheet.create({
   },
   horizontalList: {
     paddingHorizontal: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: SpotifyColors.lightGray,
   },
 });
