@@ -58,8 +58,7 @@ export function RankingItem({ position, username, avatarUrl, hours, isCurrentUse
         </View>
       </View>
       <View style={styles.rightSection}>
-        <ThemedText style={styles.hours}>{hours.toLocaleString()}</ThemedText>
-        <ThemedText style={styles.hoursLabel}>horas</ThemedText>
+        <ThemedText style={styles.hours}>{hours.toLocaleString()}h</ThemedText>
       </View>
     </Pressable>
   );
@@ -135,14 +134,11 @@ const styles = StyleSheet.create({
   },
   rightSection: {
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   hours: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: SpotifyColors.white,
-  },
-  hoursLabel: {
-    fontSize: 11,
-    color: SpotifyColors.lightGray,
   },
 });
