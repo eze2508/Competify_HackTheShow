@@ -18,4 +18,7 @@ router.delete('/track/:artistId', auth, artistsCtrl.untrackArtist);
 // GET /artists/discover - descubrir artistas (recomendaciones)
 router.get('/discover', auth, artistsCtrl.discoverArtists);
 
+// GET /artists/similar - obtener artistas similares a tu top artista
+router.get('/similar', auth, artistsCtrl.getSimilarArtists);
+
 module.exports = router;

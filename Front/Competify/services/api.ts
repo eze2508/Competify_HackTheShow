@@ -237,6 +237,19 @@ export class ApiService {
   }
 
   /**
+   * Obtiene artistas similares a tu top artista
+   */
+  static async getSimilarArtists(): Promise<{ artists: Artist[], basedOn: { id: string, name: string, imageUrl: string | null } | null }> {
+    try {
+      const data = await fetchWithAuth('/artists/similar');
+      return data;
+    } catch (error) {
+      console.error('Error getting similar artists:', error);
+      return { artists: [], basedOn: null };
+    }
+  }
+
+  /**
    * Calcula el rango basado en las horas totales
    */
   static calculateRank(totalHours: number): VinylRank {

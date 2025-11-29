@@ -187,3 +187,55 @@ exports.discoverArtists = async (req, res) => {
     res.json([]);
   }
 };
+
+/**
+ * GET /artists/similar - Obtiene artistas similares a tu top artista
+ */
+exports.getSimilarArtists = async (req, res) => {
+  try {
+    const user = req.user;
+    const accessToken = await ensureValidToken(user);
+
+    // Obtener el top artista del usuario
+    const topResponse = await axios.get('https://api.spotify.com/v1/me/top/artists', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: { limit: 1, time_range: 'short_term' }
+    });
+
+    const topArtists = topResponse.data.items;
+    
+    if (!topArtists || topArtists.length === 0) {
+      return res.json({ artists: [], basedOn: null });
+    }
+
+    const topArtist = topArtists[0];
+
+    // Obtener artistas relacionados
+    const relatedResponse = await axios.get(`https://api.spotify.com/v1/artists/${topArtist.id}/related-artists`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    const relatedArtists = (relatedResponse.data.artists || [])
+      .slice(0, 20)
+      .map(artist => ({
+        id: artist.id,
+        name: artist.name,
+        imageUrl: artist.images[0]?.url || null,
+        genres: artist.genres || [],
+        followers: artist.followers?.total || 0,
+        popularity: artist.popularity || 0
+      }));
+
+    res.json({
+      artists: relatedArtists,
+      basedOn: {
+        id: topArtist.id,
+        name: topArtist.name,
+        imageUrl: topArtist.images[0]?.url || null
+      }
+    });
+  } catch (err) {
+    console.error('getSimilarArtists error:', err.response?.data || err.message);
+    res.json({ artists: [], basedOn: null });
+  }
+};

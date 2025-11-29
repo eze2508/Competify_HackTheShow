@@ -26,6 +26,8 @@ export default function ArtistsScreen() {
   const [trackedArtists, setTrackedArtists] = useState<Artist[]>([]);
   const [discoverArtists, setDiscoverArtists] = useState<Artist[]>([]);
   const [longTermArtists, setLongTermArtists] = useState<Artist[]>([]);
+  const [similarArtists, setSimilarArtists] = useState<Artist[]>([]);
+  const [similarBasedOn, setSimilarBasedOn] = useState<string | null>(null);
 
   useEffect(() => {
     loadArtists();
@@ -41,7 +43,8 @@ export default function ArtistsScreen() {
         ApiService.getTopArtists(10, 'short_term'),
         ApiService.getTrackedArtists(),
         ApiService.getDiscoverArtists(),
-        ApiService.getTopArtists(10, 'long_term')
+        ApiService.getTopArtists(10, 'long_term'),
+        ApiService.getSimilarArtists()
       ]);
 
       // Procesar resultados
@@ -52,6 +55,10 @@ export default function ArtistsScreen() {
       }
       if (results[2].status === 'fulfilled') setDiscoverArtists(results[2].value);
       if (results[3].status === 'fulfilled') setLongTermArtists(results[3].value);
+      if (results[4].status === 'fulfilled') {
+        setSimilarArtists(results[4].value.artists);
+        setSimilarBasedOn(results[4].value.basedOn?.name || null);
+      }
 
       // Si todas fallaron, mostrar error
       const allFailed = results.every(r => r.status === 'rejected');
@@ -107,6 +114,10 @@ export default function ArtistsScreen() {
   const artistSections = [
     { title: 'Your Top Picks', artists: filterArtistsByGenre(topArtists) },
     { title: 'Your Tracked Artists', artists: filterArtistsByGenre(trackedArtists) },
+    { 
+      title: similarBasedOn ? `Similar Vibes to ${similarBasedOn}` : 'Similar Vibes', 
+      artists: filterArtistsByGenre(similarArtists) 
+    },
     { title: 'Discover', artists: filterArtistsByGenre(discoverArtists) },
     { title: 'All Time Favorites', artists: filterArtistsByGenre(longTermArtists) },
   ];
