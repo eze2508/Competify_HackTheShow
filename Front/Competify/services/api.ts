@@ -212,46 +212,28 @@ export class ApiService {
   }
 
   /**
-   * Busca artistas por nombre o género
+   * Busca artistas por nombre en Spotify
    */
-  static async searchArtists(query: string = '', genre?: string): Promise<Artist[]> {
-    // Mock data - TODO: implementar endpoint real
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const allArtists: Artist[] = [
-      { id: '1', name: 'Taylor Swift', imageUrl: 'https://picsum.photos/200', genres: ['pop', 'country'], followers: 92000000 },
-      { id: '2', name: 'The Weeknd', imageUrl: 'https://picsum.photos/201', genres: ['r&b', 'pop'], followers: 78000000 },
-      { id: '3', name: 'Bad Bunny', imageUrl: 'https://picsum.photos/202', genres: ['reggaeton', 'latin'], followers: 74000000 },
-      { id: '4', name: 'Drake', imageUrl: 'https://picsum.photos/203', genres: ['hip hop', 'rap'], followers: 71000000 },
-      { id: '5', name: 'Ed Sheeran', imageUrl: 'https://picsum.photos/204', genres: ['pop', 'folk'], followers: 69000000 },
-      { id: '6', name: 'Ariana Grande', imageUrl: 'https://picsum.photos/205', genres: ['pop', 'r&b'], followers: 68000000 },
-      { id: '7', name: 'Justin Bieber', imageUrl: 'https://picsum.photos/206', genres: ['pop'], followers: 66000000 },
-      { id: '8', name: 'Billie Eilish', imageUrl: 'https://picsum.photos/207', genres: ['pop', 'alternative'], followers: 64000000 },
-    ];
-
-    let filtered = allArtists;
-
-    if (query) {
-      filtered = filtered.filter(artist => 
-        artist.name.toLowerCase().includes(query.toLowerCase())
-      );
+  static async searchArtists(query: string = ''): Promise<Artist[]> {
+    if (!query || query.trim() === '') {
+      return [];
     }
 
-    if (genre && genre !== 'Todo') {
-      filtered = filtered.filter(artist => 
-        artist.genres.some(g => g.toLowerCase().includes(genre.toLowerCase()))
-      );
+    try {
+      const data = await fetchWithAuth(`/search/artists?q=${encodeURIComponent(query.trim())}`);
+      return data;
+    } catch (error) {
+      console.error('Error searching artists:', error);
+      return [];
     }
-
-    return filtered;
   }
 
   /**
    * Obtiene artistas recomendados
    */
   static async getRecommendedArtists(limit: number = 12): Promise<Artist[]> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return this.searchArtists('', undefined).then(artists => artists.slice(0, limit));
+    // Ya no se usa - los artistas recomendados vienen del endpoint discover
+    return this.getDiscoverArtists();
   }
 
   /**
