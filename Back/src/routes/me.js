@@ -6,5 +6,6 @@ const meCtrl = require('../controllers/meController');
 router.get('/current', auth, meCtrl.current);
 router.get('/profile', auth, meCtrl.profile);
 router.get('/stats', auth, meCtrl.stats);
+router.get('/debug/sessions', auth, meCtrl.debugSessions);
 
 module.exports = router;

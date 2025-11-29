@@ -196,3 +196,43 @@ exports.stats = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+exports.debugSessions = async (req, res) => {
+  const user = req.user;
+  try {
+    console.log('🔍 [Debug] Consultando sesiones para user_id:', user.id);
+    
+    // Get all sessions for this user
+    const { data: sessions, error } = await supabase
+      .from('listening_sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('started_at', { ascending: false })
+      .limit(20);
+    
+    if (error) {
+      console.error('🔴 [Debug] Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    console.log(`🟢 [Debug] Encontradas ${sessions?.length || 0} sesiones`);
+    
+    // Calculate totals
+    const totalMs = (sessions || []).reduce((sum, s) => sum + (s.total_ms || 0), 0);
+    const totalHours = Math.floor(totalMs / (1000 * 60 * 60));
+    const totalMinutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    res.json({
+      user_id: user.id,
+      total_sessions: sessions?.length || 0,
+      total_ms: totalMs,
+      total_hours: totalHours,
+      total_minutes: totalMinutes,
+      recent_sessions: sessions || [],
+      note: 'Mostrando las últimas 20 sesiones'
+    });
+  } catch (err) {
+    console.error('🔴 [Debug] Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};

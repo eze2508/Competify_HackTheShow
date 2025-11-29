@@ -10,15 +10,18 @@ async function handleUser(user) {
   try {
     // refresh token if expired
     if (!user.access_token || new Date(user.token_expires_at) <= new Date()) {
+      console.log(`🔵 [Tracker] Token expirado para usuario ${user.id}, refrescando...`);
       await refreshAccessTokenForUser(user);
       // reload tokens
       const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
       user.access_token = data.access_token;
       user.token_expires_at = data.token_expires_at;
+      console.log(`🟢 [Tracker] Token refrescado para usuario ${user.id}`);
     }
 
     const playing = await getCurrentlyPlaying(user.access_token);
     if (!playing || !playing.item) {
+      console.log(`⚪ [Tracker] Usuario ${user.id} no está reproduciendo nada`);
       // nothing playing -> if we had an active session, close it
       const active = activeMap.get(user.id);
       if (active && !active.ended) {
@@ -27,6 +30,8 @@ async function handleUser(user) {
       }
       return;
     }
+    
+    console.log(`🎵 [Tracker] Usuario ${user.id} reproduciendo: ${playing.item.name}`);
 
     const track = playing.item;
     const trackId = track.id;
@@ -90,12 +95,16 @@ async function tick() {
     // get all users that have refresh_token (i.e., connected)
     const { data: users, error } = await supabase.from('users').select('*').not('refresh_token', 'is', null);
     if (error) {
-      console.error('Error fetching users for tracker', error);
+      console.error('🔴 [Tracker] Error fetching users for tracker', error);
       return;
+    }
+    console.log(`🔵 [Tracker] Tick - Rastreando ${users?.length || 0} usuarios conectados`);
+    if (users && users.length > 0) {
+      console.log('🔵 [Tracker] IDs de usuarios:', users.map(u => u.id).join(', '));
     }
     await Promise.all(users.map(u => handleUser(u)));
   } catch (err) {
-    console.error('Tick error', err);
+    console.error('🔴 [Tracker] Tick error', err);
   }
 }
 
