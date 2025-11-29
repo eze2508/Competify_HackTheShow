@@ -12,30 +12,32 @@ type TimePeriod = 'week' | 'month' | 'year' | 'all-time';
 
 // Función para generar rankings mock por artista
 const generateArtistRanking = (artistId: string) => {
+  const hash = Math.abs(parseInt(artistId.slice(0, 8), 36));
+  
+  const generateUsers = (count: number, baseHours: number, hourVariation: number, currentUserPosition: number) => {
+    const users = [];
+    for (let i = 1; i <= count; i++) {
+      const isCurrentUser = i === currentUserPosition;
+      const hours = baseHours - (i - 1) * 2 + (hash % hourVariation);
+      const rank = i <= 3 ? (i === 1 ? 'gold' : i === 2 ? 'silver' : 'bronze') as VinylRank : 'bronze' as VinylRank;
+      
+      users.push({
+        id: String(i),
+        username: isCurrentUser ? 'Usuario123' : `User${hash % 100}_${i}`,
+        avatarUrl: `https://i.pravatar.cc/100?img=${(hash + i) % 70}`,
+        hours: Math.max(1, hours),
+        rank: rank,
+        isCurrentUser: isCurrentUser
+      });
+    }
+    return users;
+  };
+  
   const rankings = {
-    week: [
-      { id: '1', username: 'SuperFan_' + artistId.slice(0, 5), avatarUrl: 'https://i.pravatar.cc/100?img=' + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50), hours: 28 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 10), rank: 'gold' as VinylRank },
-      { id: '2', username: 'MusicLover' + artistId.slice(0, 5), avatarUrl: 'https://i.pravatar.cc/100?img=' + ((Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50) + 1), hours: 24 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 10), rank: 'silver' as VinylRank },
-      { id: '3', username: 'Usuario123', avatarUrl: 'https://i.pravatar.cc/100?img=3', hours: 20 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 10), rank: 'bronze' as VinylRank, isCurrentUser: true },
-      { id: '4', username: 'Fan4Ever', avatarUrl: 'https://i.pravatar.cc/100?img=' + ((Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50) + 2), hours: 18 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 10), rank: 'bronze' as VinylRank },
-      { id: '5', username: 'Listener' + artistId.slice(0, 5), avatarUrl: 'https://i.pravatar.cc/100?img=' + ((Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50) + 3), hours: 15 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 10), rank: 'bronze' as VinylRank },
-    ],
-    month: [
-      { id: '1', username: 'SuperFan_' + artistId.slice(0, 5), avatarUrl: 'https://i.pravatar.cc/100?img=' + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50), hours: 112 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 40), rank: 'gold' as VinylRank },
-      { id: '2', username: 'Usuario123', avatarUrl: 'https://i.pravatar.cc/100?img=3', hours: 98 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 40), rank: 'silver' as VinylRank, isCurrentUser: true },
-      { id: '3', username: 'MusicLover' + artistId.slice(0, 5), avatarUrl: 'https://i.pravatar.cc/100?img=' + ((Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50) + 1), hours: 85 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 40), rank: 'bronze' as VinylRank },
-    ],
-    year: [
-      { id: '1', username: 'SuperFan_' + artistId.slice(0, 5), avatarUrl: 'https://i.pravatar.cc/100?img=' + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50), hours: 1342 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 200), rank: 'gold' as VinylRank },
-      { id: '2', username: 'MusicLover' + artistId.slice(0, 5), avatarUrl: 'https://i.pravatar.cc/100?img=' + ((Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50) + 1), hours: 1198 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 200), rank: 'gold' as VinylRank },
-      { id: '3', username: 'Usuario123', avatarUrl: 'https://i.pravatar.cc/100?img=3', hours: 1067 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 200), rank: 'silver' as VinylRank, isCurrentUser: true },
-    ],
-    'all-time': [
-      { id: '1', username: 'SuperFan_' + artistId.slice(0, 5), avatarUrl: 'https://i.pravatar.cc/100?img=' + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50), hours: 3245 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 500), rank: 'gold' as VinylRank },
-      { id: '2', username: 'MusicLover' + artistId.slice(0, 5), avatarUrl: 'https://i.pravatar.cc/100?img=' + ((Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50) + 1), hours: 2876 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 500), rank: 'gold' as VinylRank },
-      { id: '3', username: 'Fan4Ever', avatarUrl: 'https://i.pravatar.cc/100?img=' + ((Math.abs(parseInt(artistId.slice(0, 8), 36)) % 50) + 2), hours: 2543 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 500), rank: 'silver' as VinylRank },
-      { id: '4', username: 'Usuario123', avatarUrl: 'https://i.pravatar.cc/100?img=3', hours: 2198 + (Math.abs(parseInt(artistId.slice(0, 8), 36)) % 500), rank: 'silver' as VinylRank, isCurrentUser: true },
-    ],
+    week: generateUsers(20, 35, 15, 3),
+    month: generateUsers(20, 140, 40, 5),
+    year: generateUsers(20, 1500, 200, 7),
+    'all-time': generateUsers(20, 3500, 500, 10),
   };
   return rankings;
 };
