@@ -139,6 +139,121 @@ async function isMember({ club_id, user_id }) {
   return data?.some(m => m.user_id === user_id);
 }
 
+/**
+ * Friends DB helpers
+ */
+
+async function getUserById(userId) {
+  const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
+  return error ? null : data;
+}
+
+async function areFriends(userId1, userId2) {
+  const { data, error } = await supabase.from('friends')
+    .select('*')
+    .or(`and(user1.eq.${userId1},user2.eq.${userId2}),and(user1.eq.${userId2},user2.eq.${userId1})`)
+    .limit(1)
+    .single();
+  return data ? true : false;
+}
+
+async function findPendingFriendRequest(fromUser, toUser) {
+  const { data, error } = await supabase.from('friend_requests')
+    .select('*')
+    .eq('from_user', fromUser)
+    .eq('to_user', toUser)
+    .eq('status', 'pending')
+    .single();
+  return error ? null : data;
+}
+
+async function createFriendRequest(fromUser, toUser) {
+  return supabase.from('friend_requests').insert({
+    from_user: fromUser,
+    to_user: toUser,
+    status: 'pending'
+  }).select().single();
+}
+
+async function getFriendRequest(requestId) {
+  const { data, error } = await supabase.from('friend_requests')
+    .select('*')
+    .eq('id', requestId)
+    .single();
+  return error ? null : data;
+}
+
+async function acceptFriendRequest(requestId) {
+  return supabase.from('friend_requests')
+    .update({ status: 'accepted' })
+    .eq('id', requestId);
+}
+
+async function rejectFriendRequest(requestId) {
+  return supabase.from('friend_requests')
+    .update({ status: 'rejected' })
+    .eq('id', requestId);
+}
+
+async function deleteFriendRequest(requestId) {
+  return supabase.from('friend_requests').delete().eq('id', requestId);
+}
+
+async function insertFriendsRelation(userId1, userId2) {
+  return supabase.from('friends').insert({
+    user1: userId1,
+    user2: userId2
+  }).select().single();
+}
+
+async function listFriends(userId) {
+  const { data, error } = await supabase.from('friends')
+    .select('user1, user2')
+    .or(`user1.eq.${userId},user2.eq.${userId}`);
+  
+  if (error) return [];
+  
+  // Extract friend IDs (the other user in each relation)
+  const friendIds = data.map(row => 
+    row.user1 === userId ? row.user2 : row.user1
+  );
+  
+  if (friendIds.length === 0) return [];
+  
+  // Get user details for all friends
+  const { data: users, error: usersError } = await supabase.from('users')
+    .select('id, spotify_id')
+    .in('id', friendIds);
+  
+  return usersError ? [] : users;
+}
+
+async function listReceivedFriendRequests(userId) {
+  const { data, error } = await supabase.from('friend_requests')
+    .select('id, from_user, created_at')
+    .eq('to_user', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  
+  return error ? [] : data;
+}
+
+async function listSentFriendRequests(userId) {
+  const { data, error } = await supabase.from('friend_requests')
+    .select('id, to_user, created_at')
+    .eq('from_user', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  
+  return error ? [] : data;
+}
+
+async function removeFriendsRelation(userId1, userId2) {
+  return supabase.from('friends')
+    .delete()
+    .or(`and(user1.eq.${userId1},user2.eq.${userId2}),and(user1.eq.${userId2},user2.eq.${userId1})`);
+}
+
 
 module.exports = {
   createClub,
@@ -156,6 +271,21 @@ module.exports = {
   getTotalMsPerUserForClub,
   getClubMemberCountMap,
   isMember,
+
+  // Friends functions
+  getUserById,
+  areFriends,
+  findPendingFriendRequest,
+  createFriendRequest,
+  getFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
+  deleteFriendRequest,
+  insertFriendsRelation,
+  listFriends,
+  listReceivedFriendRequests,
+  listSentFriendRequests,
+  removeFriendsRelation,
 
   // 🔥 ALIAS necesarios para que los tests no exploten
   getClubByUserId: getMemberByUserId,
