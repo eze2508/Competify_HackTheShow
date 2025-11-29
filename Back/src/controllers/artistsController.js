@@ -196,10 +196,10 @@ exports.getSimilarArtists = async (req, res) => {
     const user = req.user;
     const accessToken = await ensureValidToken(user);
 
-    // Obtener el top artista del usuario
+    // Obtener varios top artistas para tener fallback
     const topResponse = await axios.get('https://api.spotify.com/v1/me/top/artists', {
       headers: { Authorization: `Bearer ${accessToken}` },
-      params: { limit: 1, time_range: 'short_term' }
+      params: { limit: 5, time_range: 'short_term' }
     });
 
     const topArtists = topResponse.data.items;
@@ -208,14 +208,35 @@ exports.getSimilarArtists = async (req, res) => {
       return res.json({ artists: [], basedOn: null });
     }
 
-    const topArtist = topArtists[0];
+    // Intentar obtener artistas relacionados, probando con varios top artists si es necesario
+    let relatedArtists = [];
+    let successfulArtist = null;
 
-    // Obtener artistas relacionados
-    const relatedResponse = await axios.get(`https://api.spotify.com/v1/artists/${topArtist.id}/related-artists`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+    for (const topArtist of topArtists) {
+      try {
+        const relatedResponse = await axios.get(`https://api.spotify.com/v1/artists/${topArtist.id}/related-artists`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
 
-    const relatedArtists = (relatedResponse.data.artists || [])
+        if (relatedResponse.data.artists && relatedResponse.data.artists.length > 0) {
+          relatedArtists = relatedResponse.data.artists;
+          successfulArtist = topArtist;
+          break; // Encontramos artistas relacionados, salir del loop
+        }
+      } catch (err) {
+        // Si falla con 404, intentar con el siguiente artista
+        console.log(`No related artists found for ${topArtist.name}, trying next...`);
+        continue;
+      }
+    }
+
+    // Si no encontramos artistas relacionados, devolver vacío
+    if (!successfulArtist || relatedArtists.length === 0) {
+      return res.json({ artists: [], basedOn: null });
+    }
+
+    // Mapear los artistas relacionados
+    const mappedArtists = relatedArtists
       .slice(0, 20)
       .map(artist => ({
         id: artist.id,
@@ -227,11 +248,11 @@ exports.getSimilarArtists = async (req, res) => {
       }));
 
     res.json({
-      artists: relatedArtists,
+      artists: mappedArtists,
       basedOn: {
-        id: topArtist.id,
-        name: topArtist.name,
-        imageUrl: topArtist.images[0]?.url || null
+        id: successfulArtist.id,
+        name: successfulArtist.name,
+        imageUrl: successfulArtist.images[0]?.url || null
       }
     });
   } catch (err) {
