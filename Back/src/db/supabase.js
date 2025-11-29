@@ -134,6 +134,12 @@ async function getTotalMsPerUserForClub(club_id) {
   return { data: map };
 }
 
+async function isMember({ club_id, user_id }) {
+  const { data } = await getMembersByClubId(club_id);
+  return data?.some(m => m.user_id === user_id);
+}
+
+
 module.exports = {
   createClub,
   getClubById,
@@ -148,5 +154,10 @@ module.exports = {
   insertClubMessage,
   deleteClubIfEmpty,
   getTotalMsPerUserForClub,
-  getClubMemberCountMap
+  getClubMemberCountMap,
+  isMember,
+
+  // 🔥 ALIAS necesarios para que los tests no exploten
+  getClubByUserId: getMemberByUserId,
+  getClubByNameLike: searchClubsByName
 };
