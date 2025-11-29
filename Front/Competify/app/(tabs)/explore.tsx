@@ -198,8 +198,25 @@ export default function ArtistsScreen() {
 
       {/* Sections */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {artistSections.map((section, index) => (
-          section.artists.length > 0 && (
+        {artistSections.map((section, index) => {
+          // Mostrar mensaje especial para Tracked Artists si está vacío
+          if (section.title === 'Your Tracked Artists' && section.artists.length === 0) {
+            return (
+              <View key={index} style={styles.section}>
+                <ThemedText style={styles.sectionTitle}>{section.title}</ThemedText>
+                <View style={styles.emptyTrackedContainer}>
+                  <ThemedText style={styles.emptyTrackedText}>
+                    Aún no has trackeado artistas
+                  </ThemedText>
+                  <ThemedText style={styles.emptyTrackedHint}>
+                    Toca el ✓ en cualquier artista para añadirlo aquí
+                  </ThemedText>
+                </View>
+              </View>
+            );
+          }
+
+          return section.artists.length > 0 ? (
             <View key={index} style={styles.section}>
               <ThemedText style={styles.sectionTitle}>{section.title}</ThemedText>
               <FlatList
@@ -222,8 +239,8 @@ export default function ArtistsScreen() {
                 contentContainerStyle={styles.horizontalList}
               />
             </View>
-          )
-        ))}
+          ) : null;
+        })}
       </ScrollView>
     </ThemedView>
   );
@@ -353,5 +370,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: SpotifyColors.lightGray,
+  },
+  emptyTrackedContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyTrackedText: {
+    fontSize: 16,
+    color: SpotifyColors.lightGray,
+    marginBottom: 8,
+  },
+  emptyTrackedHint: {
+    fontSize: 14,
+    color: SpotifyColors.mediumGray,
+    textAlign: 'center',
   },
 });

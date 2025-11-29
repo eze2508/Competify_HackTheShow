@@ -152,13 +152,21 @@ exports.discoverArtists = async (req, res) => {
     });
 
     const topArtists = topResponse.data.items;
-    const seedArtistIds = topArtists.map(a => a.id).slice(0, 5);
-    const genres = [...new Set(topArtists.flatMap(a => a.genres))].slice(0, 2);
+    
+    // Si no hay artistas suficientes, devolver array vacío en lugar de error
+    if (!topArtists || topArtists.length === 0) {
+      return res.json([]);
+    }
+
+    const seedArtistIds = topArtists.map(a => a.id).slice(0, Math.min(2, topArtists.length));
 
     // Buscar artistas relacionados
-    const relatedPromises = seedArtistIds.slice(0, 2).map(artistId => 
+    const relatedPromises = seedArtistIds.map(artistId => 
       axios.get(`https://api.spotify.com/v1/artists/${artistId}/related-artists`, {
         headers: { Authorization: `Bearer ${accessToken}` }
+      }).catch(err => {
+        console.error(`Error getting related artists for ${artistId}:`, err.response?.data || err.message);
+        return { data: { artists: [] } }; // Retornar array vacío si falla
       })
     );
 
@@ -182,7 +190,7 @@ exports.discoverArtists = async (req, res) => {
     res.json(artists);
   } catch (err) {
     console.error('discoverArtists error:', err.response?.data || err.message);
-    const errorDetails = err.response?.data?.error || err.message;
-    res.status(500).json({ error: 'Failed to discover artists', details: errorDetails });
+    // En caso de error, devolver array vacío en lugar de 500
+    res.json([]);
   }
 };
