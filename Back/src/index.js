@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const meRoutes = require('./routes/me');
@@ -17,9 +18,12 @@ app.use('/auth', authRoutes);
 app.use('/me', meRoutes);
 app.use('/search', searchRoutes);   
 app.use('/tracks', tracksRoutes);
-app.use('/spotify', spotifyRoutes); 
+app.use('/spotify', spotifyRoutes);
+app.use(express.static(path.join(__dirname, '../public'))); 
 
-app.get('/', (req, res) => res.send('Spotify Listening Tracker API'));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
