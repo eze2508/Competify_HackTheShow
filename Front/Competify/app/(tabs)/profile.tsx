@@ -218,6 +218,7 @@ export default function ProfileScreen() {
               label="Este Mes" 
               value={displayData.currentMonthHours}
               icon={statsIcons.calendar}
+              gradient
             />
             <StatsCard 
               label="Esta Semana" 
@@ -230,6 +231,7 @@ export default function ProfileScreen() {
               label="Horas Totales" 
               value={displayData.totalHours}
               icon={statsIcons.music}
+              gradient
             />
             <StatsCard 
               label="Artistas Únicos" 
