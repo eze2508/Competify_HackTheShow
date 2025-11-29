@@ -66,7 +66,37 @@ module.exports = {
   //     LIST FRIENDS
   // -----------------------------
   listFriends: async (userId) => {
-    return await db.listFriends(userId);
+    const friends = await db.listFriends(userId);
+    
+    // Get names and avatars from Spotify for each friend
+    const axios = require('axios');
+    const enrichedFriends = await Promise.all(
+      friends.map(async (friend) => {
+        try {
+          if (friend.access_token) {
+            const response = await axios.get('https://api.spotify.com/v1/me', {
+              headers: { Authorization: `Bearer ${friend.access_token}` }
+            });
+            return {
+              user_id: friend.id,
+              username: response.data.display_name || friend.spotify_id,
+              avatar_url: response.data.images?.[0]?.url || null,
+              spotify_id: friend.spotify_id
+            };
+          }
+        } catch (error) {
+          console.error('Error fetching friend profile:', error.message);
+        }
+        return {
+          user_id: friend.id,
+          username: friend.spotify_id,
+          avatar_url: null,
+          spotify_id: friend.spotify_id
+        };
+      })
+    );
+    
+    return enrichedFriends;
   },
 
   // -----------------------------

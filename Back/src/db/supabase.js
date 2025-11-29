@@ -220,9 +220,9 @@ async function listFriends(userId) {
   
   if (friendIds.length === 0) return [];
   
-  // Get user details for all friends
+  // Get user details for all friends (including access_token for Spotify API calls)
   const { data: users, error: usersError } = await supabase.from('users')
-    .select('id, spotify_id')
+    .select('id, spotify_id, access_token')
     .in('id', friendIds);
   
   return usersError ? [] : users;

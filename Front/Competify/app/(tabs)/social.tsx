@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl } from 'react-native';
+import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl, Image } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
@@ -258,6 +258,13 @@ export default function SocialScreen() {
 
     return friends.map((friend) => (
       <View key={friend.user_id} style={styles.card}>
+        {friend.avatar_url ? (
+          <Image source={{ uri: friend.avatar_url }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <Ionicons name="person" size={24} color={SpotifyColors.lightGray} />
+          </View>
+        )}
         <View style={styles.cardInfo}>
           <ThemedText style={styles.cardName}>{friend.username}</ThemedText>
           {friend.hours !== undefined && (
@@ -678,6 +685,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+  },
+  avatarPlaceholder: {
+    backgroundColor: SpotifyColors.darkGray,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardInfo: {
     flex: 1,
