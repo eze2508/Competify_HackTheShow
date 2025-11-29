@@ -145,61 +145,56 @@ exports.discoverArtists = async (req, res) => {
     const user = req.user;
     const accessToken = await ensureValidToken(user);
 
-    // Obtener recomendaciones basadas en top artists y géneros
-    const topResponse = await axios.get('https://api.spotify.com/v1/me/top/artists', {
+    // Obtener top tracks para usar como semillas (más confiable que artistas)
+    const topTracksResponse = await axios.get('https://api.spotify.com/v1/me/top/tracks', {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: { limit: 5, time_range: 'short_term' }
     });
 
-    const topArtists = topResponse.data.items;
+    const topTracks = topTracksResponse.data.items;
     
-    // Si no hay artistas suficientes, devolver array vacío en lugar de error
-    if (!topArtists || topArtists.length === 0) {
+    if (!topTracks || topTracks.length === 0) {
       return res.json([]);
     }
 
-    // Filtrar artistas válidos (con ID no vacío)
-    const validArtists = topArtists.filter(a => a.id && a.id.length > 0);
-    
-    if (validArtists.length === 0) {
-      return res.json([]);
-    }
+    // Usar track IDs como semillas para recomendaciones
+    const seedTracks = topTracks.map(t => t.id).slice(0, 5).join(',');
 
-    const seedArtistIds = validArtists.map(a => a.id).slice(0, Math.min(2, validArtists.length));
-
-    // Buscar artistas relacionados solo para IDs válidos
-    const relatedPromises = seedArtistIds.map(async artistId => {
-      try {
-        // Primero verificar que el artista existe
-        const artistCheck = await axios.get(`https://api.spotify.com/v1/artists/${artistId}`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        
-        if (!artistCheck.data || !artistCheck.data.id) {
-          return { data: { artists: [] } };
-        }
-
-        // Si existe, obtener artistas relacionados
-        const related = await axios.get(`https://api.spotify.com/v1/artists/${artistId}/related-artists`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        
-        return related;
-      } catch (err) {
-        console.error(`Error getting related artists for ${artistId}:`, err.response?.data || err.message);
-        return { data: { artists: [] } };
+    // Obtener recomendaciones de Spotify
+    const recommendationsResponse = await axios.get('https://api.spotify.com/v1/recommendations', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: { 
+        seed_tracks: seedTracks,
+        limit: 20
       }
     });
 
-    const relatedResponses = await Promise.all(relatedPromises);
-    const relatedArtists = relatedResponses.flatMap(r => r.data.artists).filter(a => a && a.id);
+    const recommendations = recommendationsResponse.data.tracks || [];
+    
+    // Extraer artistas únicos de las recomendaciones
+    const artistsMap = new Map();
+    
+    recommendations.forEach(track => {
+      track.artists.forEach(artist => {
+        if (!artistsMap.has(artist.id)) {
+          artistsMap.set(artist.id, artist);
+        }
+      });
+    });
 
-    // Filtrar y mapear artistas únicos
-    const uniqueArtists = Array.from(
-      new Map(relatedArtists.map(a => [a.id, a])).values()
-    ).slice(0, 20);
+    // Obtener detalles completos de los artistas
+    const artistIds = Array.from(artistsMap.keys()).slice(0, 20);
+    
+    if (artistIds.length === 0) {
+      return res.json([]);
+    }
 
-    const artists = uniqueArtists.map(artist => ({
+    const artistsDetailsResponse = await axios.get('https://api.spotify.com/v1/artists', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: { ids: artistIds.join(',') }
+    });
+
+    const artists = (artistsDetailsResponse.data.artists || []).map(artist => ({
       id: artist.id,
       name: artist.name,
       imageUrl: artist.images[0]?.url || null,
