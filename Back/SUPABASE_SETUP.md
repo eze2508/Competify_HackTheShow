@@ -7,8 +7,8 @@ Ve a tu proyecto de Supabase → SQL Editor y ejecuta este SQL:
 ```sql
 -- Crear tabla de artistas trackeados
 CREATE TABLE IF NOT EXISTS tracked_artists (
-  id BIGSERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   artist_id TEXT NOT NULL,
   artist_name TEXT NOT NULL,
   artist_image_url TEXT,
@@ -25,47 +25,25 @@ CREATE INDEX IF NOT EXISTS idx_tracked_artists_artist_id ON tracked_artists(arti
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE tracked_artists ENABLE ROW LEVEL SECURITY;
 
--- Política: Los usuarios pueden ver sus propios artistas trackeados
-CREATE POLICY "Users can view their own tracked artists"
-  ON tracked_artists FOR SELECT
-  USING (true);  -- Por ahora permitir todo, tu backend maneja la autenticación
-
--- Política: Los usuarios pueden insertar sus propios artistas
-CREATE POLICY "Users can insert their own tracked artists"
-  ON tracked_artists FOR INSERT
+-- Política: Permitir todas las operaciones (tu backend maneja la autenticación)
+CREATE POLICY "Allow all operations on tracked_artists"
+  ON tracked_artists FOR ALL
+  USING (true)
   WITH CHECK (true);
-
--- Política: Los usuarios pueden actualizar sus propios artistas
-CREATE POLICY "Users can update their own tracked artists"
-  ON tracked_artists FOR UPDATE
-  USING (true);
-
--- Política: Los usuarios pueden eliminar sus propios artistas
-CREATE POLICY "Users can delete their own tracked artists"
-  ON tracked_artists FOR DELETE
-  USING (true);
 ```
 
-## Verificar que exista la tabla users
+## Verificar el tipo de ID de la tabla users
 
-Si no existe la tabla `users`, créala primero:
+Primero verifica qué tipo de ID usa tu tabla users:
 
 ```sql
-CREATE TABLE IF NOT EXISTS users (
-  id BIGSERIAL PRIMARY KEY,
-  spotify_id TEXT UNIQUE NOT NULL,
-  username TEXT NOT NULL,
-  email TEXT,
-  avatar_url TEXT,
-  access_token TEXT,
-  refresh_token TEXT,
-  token_expires_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_users_spotify_id ON users(spotify_id);
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'users' AND column_name = 'id';
 ```
+
+Si muestra `uuid`, usa el SQL de arriba.
+Si muestra `bigint`, cambia `UUID` por `BIGINT` en el SQL de tracked_artists.
 
 ## Pasos:
 
