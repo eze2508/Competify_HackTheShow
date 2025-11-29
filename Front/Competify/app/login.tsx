@@ -103,6 +103,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: SpotifyColors.green,
     marginBottom: 8,
+    lineHeight: 56,
+    includeFontPadding: false,
   },
   subtitle: {
     fontSize: 20,

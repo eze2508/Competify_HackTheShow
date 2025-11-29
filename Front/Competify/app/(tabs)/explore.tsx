@@ -37,6 +37,14 @@ export default function ArtistsScreen() {
     try {
       setLoading(true);
       setError(null);
+
+      // Verificar si hay token antes de hacer las peticiones
+      const token = await ApiService.getStoredToken();
+      if (!token) {
+        setError('Debes iniciar sesión para ver tus artistas');
+        setLoading(false);
+        return;
+      }
       
       // Cargar cada sección independientemente para que si una falla, las otras se carguen
       const results = await Promise.allSettled([

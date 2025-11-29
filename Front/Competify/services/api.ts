@@ -95,6 +95,13 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promi
 
 export class ApiService {
   /**
+   * Obtiene el token almacenado (útil para verificaciones)
+   */
+  static async getStoredToken(): Promise<string | null> {
+    return await getAuthToken();
+  }
+
+  /**
    * Inicia el flujo de autenticación con Spotify
    */
   static getLoginUrl(): string {
