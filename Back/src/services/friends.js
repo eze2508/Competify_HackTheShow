@@ -37,13 +37,21 @@ module.exports = {
         return { error: "request_not_found" };
       }
 
-      console.log('Accepting friend request:', requestId);
-      const updateResult = await db.acceptFriendRequest(requestId);
-      console.log('Update result:', updateResult);
-      
+      // Check if they're already friends
+      const alreadyFriends = await db.areFriends(request.from_user, request.to_user);
+      if (alreadyFriends) {
+        console.log('Already friends, just deleting request');
+        await db.deleteFriendRequest(requestId);
+        return { accepted: true };
+      }
+
       console.log('Inserting friends relation:', { from: request.from_user, to: request.to_user });
       const insertResult = await db.insertFriendsRelation(request.from_user, request.to_user);
       console.log('Insert result:', insertResult);
+      
+      console.log('Deleting friend request:', requestId);
+      const deleteResult = await db.deleteFriendRequest(requestId);
+      console.log('Delete result:', deleteResult);
 
       return { accepted: true };
     } catch (error) {
