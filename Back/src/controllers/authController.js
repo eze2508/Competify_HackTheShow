@@ -102,7 +102,7 @@ exports.callback = async (req, res) => {
     const token = jwt.sign({ userId: user.id, spotify_id: spotify_id }, JWT_SECRET, { expiresIn: '30d' });
 
     // redirect to frontend with token (frontend should read token from query and store securely)
-    const redirectUrl = `${FRONTEND_URL}/auth/success?token=${encodeURIComponent(token)}`;
+    const redirectUrl = `${FRONTEND_URL}?token=${encodeURIComponent(token)}`;
     res.redirect(redirectUrl);
   } catch (err) {
     console.error('Spotify callback error', err.response?.data || err.message);
