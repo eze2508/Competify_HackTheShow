@@ -88,13 +88,33 @@ exports.searchClubs = async (req, res) => {
 
 exports.listClubs = async (req, res) => {
   try {
+    const userId = req.user.id;
+    console.log('🔵 [Clubs] listClubs - userId:', userId);
+    
+    // Obtener el club del usuario
+    const result = await clubsSvc.getUserClubService({ userId });
+    if (result.error) {
+      console.log('⚪ [Clubs] Usuario no está en ningún club');
+      return res.json({ clubs: [] });
+    }
+    
+    console.log('🟢 [Clubs] Club del usuario:', result.data);
+    return res.json({ clubs: result.data ? [result.data] : [] });
+  } catch (err) {
+    console.error('🔴 [Clubs] listClubs controller error', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
+exports.listAllClubs = async (req, res) => {
+  try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const result = await clubsSvc.listClubsService({ page, limit });
     if (result.error) return res.status(500).json({ error: 'server_error' });
     return res.json(result.data);
   } catch (err) {
-    console.error('listClubs controller error', err);
+    console.error('listAllClubs controller error', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };

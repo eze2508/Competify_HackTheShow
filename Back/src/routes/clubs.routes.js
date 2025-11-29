@@ -17,8 +17,11 @@ router.post('/leave', auth, clubsCtrl.leaveClub);
 // Search by name
 router.get('/search', auth, clubsCtrl.searchClubs);
 
-// List with pagination
+// List user's club
 router.get('/list', auth, clubsCtrl.listClubs);
+
+// List all clubs with pagination
+router.get('/all', auth, clubsCtrl.listAllClubs);
 
 // Members
 router.get('/:clubId/members', auth, clubsCtrl.getMembers);

@@ -100,6 +100,33 @@ async function searchClubsService({ name, limit = 20 }) {
   return { data: result };
 }
 
+async function getUserClubService({ userId }) {
+  // Obtener la membresía del usuario
+  const { data: member } = await db.getMemberByUserId(userId);
+  if (!member) {
+    return { error: { code: 'not_in_club' } };
+  }
+
+  // Obtener el club
+  const { data: club, error } = await db.getClubById(member.club_id);
+  if (error || !club) {
+    return { error: { code: 'club_not_found' } };
+  }
+
+  // Obtener cantidad de miembros
+  const counts = await db.getClubMemberCountMap([club.id]);
+
+  return {
+    data: {
+      id: club.id,
+      name: club.name,
+      owner_id: club.owner_id,
+      member_count: counts[club.id] || 0,
+      created_at: club.created_at
+    }
+  };
+}
+
 async function listClubsService({ page = 1, limit = 10 }) {
   const { data, error } = await db.listClubs({ page, limit });
   if (error) return { error };
@@ -194,6 +221,7 @@ module.exports = {
   joinClubService,
   leaveClubService,
   searchClubsService,
+  getUserClubService,
   listClubsService,
   membersOfClubService,
   getMessagesService,
