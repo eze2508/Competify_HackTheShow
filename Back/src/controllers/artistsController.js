@@ -158,20 +158,41 @@ exports.discoverArtists = async (req, res) => {
       return res.json([]);
     }
 
-    const seedArtistIds = topArtists.map(a => a.id).slice(0, Math.min(2, topArtists.length));
+    // Filtrar artistas válidos (con ID no vacío)
+    const validArtists = topArtists.filter(a => a.id && a.id.length > 0);
+    
+    if (validArtists.length === 0) {
+      return res.json([]);
+    }
 
-    // Buscar artistas relacionados
-    const relatedPromises = seedArtistIds.map(artistId => 
-      axios.get(`https://api.spotify.com/v1/artists/${artistId}/related-artists`, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      }).catch(err => {
+    const seedArtistIds = validArtists.map(a => a.id).slice(0, Math.min(2, validArtists.length));
+
+    // Buscar artistas relacionados solo para IDs válidos
+    const relatedPromises = seedArtistIds.map(async artistId => {
+      try {
+        // Primero verificar que el artista existe
+        const artistCheck = await axios.get(`https://api.spotify.com/v1/artists/${artistId}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        
+        if (!artistCheck.data || !artistCheck.data.id) {
+          return { data: { artists: [] } };
+        }
+
+        // Si existe, obtener artistas relacionados
+        const related = await axios.get(`https://api.spotify.com/v1/artists/${artistId}/related-artists`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        
+        return related;
+      } catch (err) {
         console.error(`Error getting related artists for ${artistId}:`, err.response?.data || err.message);
-        return { data: { artists: [] } }; // Retornar array vacío si falla
-      })
-    );
+        return { data: { artists: [] } };
+      }
+    });
 
     const relatedResponses = await Promise.all(relatedPromises);
-    const relatedArtists = relatedResponses.flatMap(r => r.data.artists);
+    const relatedArtists = relatedResponses.flatMap(r => r.data.artists).filter(a => a && a.id);
 
     // Filtrar y mapear artistas únicos
     const uniqueArtists = Array.from(
