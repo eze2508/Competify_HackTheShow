@@ -23,6 +23,12 @@ router.get('/list', auth, clubsCtrl.listClubs);
 // List all clubs with pagination
 router.get('/all', auth, clubsCtrl.listAllClubs);
 
+// Debug: verificar club del usuario
+router.get('/debug/me', auth, clubsCtrl.debugUserClub);
+
+// Debug: limpiar membresías huérfanas
+router.post('/debug/clean', auth, clubsCtrl.cleanOrphanMembership);
+
 // Members
 router.get('/:clubId/members', auth, clubsCtrl.getMembers);
 

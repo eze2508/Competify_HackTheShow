@@ -119,6 +119,68 @@ exports.listAllClubs = async (req, res) => {
   }
 };
 
+exports.debugUserClub = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const db = require('../db/supabase');
+    
+    console.log('🔍 [Debug] Verificando club del usuario:', userId);
+    
+    // Verificar membresía
+    const { data: member, error: memberErr } = await db.getMemberByUserId(userId);
+    console.log('🔍 [Debug] Membresía encontrada:', { member, memberErr });
+    
+    if (!member) {
+      return res.json({ 
+        inClub: false, 
+        message: 'Usuario no está en ningún club',
+        member: null,
+        club: null
+      });
+    }
+    
+    // Verificar si el club existe
+    const { data: club, error: clubErr } = await db.getClubById(member.club_id);
+    console.log('🔍 [Debug] Club encontrado:', { club, clubErr });
+    
+    return res.json({
+      inClub: true,
+      member: member,
+      club: club,
+      isOrphan: !club
+    });
+  } catch (err) {
+    console.error('🔴 [Debug] Error:', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
+exports.cleanOrphanMembership = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const supabase = require('../db/supabaseClient');
+    
+    console.log('🔧 [Clean] Limpiando membresías huérfanas para:', userId);
+    
+    // Eliminar cualquier membresía del usuario
+    const { error } = await supabase
+      .from('club_members')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('🔴 [Clean] Error:', error);
+      return res.status(500).json({ error: 'server_error' });
+    }
+    
+    console.log('🟢 [Clean] Membresías limpiadas');
+    return res.json({ message: 'Membresías limpiadas', success: true });
+  } catch (err) {
+    console.error('🔴 [Clean] Error:', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
 exports.getMembers = async (req, res) => {
   try {
     const clubId = req.params.clubId;

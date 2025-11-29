@@ -3,33 +3,45 @@ const db = require('../db/supabase');
 const supabase = require('../db/supabaseClient');
 
 async function createClubService({ userId, name }) {
+  console.log('🔵 [Clubs] createClubService - userId:', userId, 'name:', name);
+  
   // 1. check user not in a club
-  const { data: existingMember } = await db.getMemberByUserId(userId);
+  const { data: existingMember, error: memberCheckErr } = await db.getMemberByUserId(userId);
+  console.log('🔍 [Clubs] Verificando membresía existente:', { existingMember, memberCheckErr });
+  
   if (existingMember) {
-    return { error: { code: 'already_in_club' } };
+    console.log('🔴 [Clubs] Usuario ya está en club:', existingMember.club_id);
+    return { error: { code: 'already_in_club', clubId: existingMember.club_id } };
   }
 
   // 2. check unique name
   const { data: existingClub, error: clubErr } = await db.getClubByName(name);
+  console.log('🔍 [Clubs] Verificando nombre único:', { existingClub, clubErr });
+  
   if (existingClub) {
+    console.log('🔴 [Clubs] Nombre de club ya existe');
     return { error: { code: 'club_name_taken' } };
   }
 
   // 3. create club
+  console.log('🔵 [Clubs] Creando club...');
   const { data: clubData, error: createErr } = await db.createClub({ name, owner_id: userId });
   if (createErr) {
-    console.error('createClubService createErr', createErr);
+    console.error('🔴 [Clubs] createClubService createErr', createErr);
     return { error: { code: 'server_error' } };
   }
+  console.log('🟢 [Clubs] Club creado:', clubData);
 
   // 4. add owner as member
+  console.log('🔵 [Clubs] Agregando owner como miembro...');
   const { data: memberData, error: memberErr } = await db.addMember({ club_id: clubData.id, user_id: userId });
   if (memberErr) {
-    console.error('createClubService addMember error', memberErr);
+    console.error('🔴 [Clubs] createClubService addMember error', memberErr);
     // try to rollback club
     await supabase.from('clubs').delete().eq('id', clubData.id);
     return { error: { code: 'server_error' } };
   }
+  console.log('🟢 [Clubs] Miembro agregado:', memberData);
 
   return { data: { ...clubData, member: memberData } };
 }
