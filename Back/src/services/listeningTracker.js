@@ -20,8 +20,12 @@ async function handleUser(user) {
     }
 
     const playing = await getCurrentlyPlaying(user.access_token);
-    if (!playing || !playing.item) {
-      console.log(`⚪ [Tracker] Usuario ${user.id} no está reproduciendo nada`);
+    if (!playing || !playing.item || !playing.is_playing) {
+      if (playing && playing.item && !playing.is_playing) {
+        console.log(`⏸️ [Tracker] Usuario ${user.id} tiene ${playing.item.name} pausado`);
+      } else {
+        console.log(`⚪ [Tracker] Usuario ${user.id} no está reproduciendo nada`);
+      }
       // nothing playing -> if we had an active session, close it
       const active = activeMap.get(user.id);
       if (active && !active.ended) {
@@ -31,7 +35,7 @@ async function handleUser(user) {
       return;
     }
     
-    console.log(`🎵 [Tracker] Usuario ${user.id} reproduciendo: ${playing.item.name}`);
+    console.log(`🎵 [Tracker] Usuario ${user.id} reproduciendo activamente: ${playing.item.name}`);
 
     const track = playing.item;
     const trackId = track.id;

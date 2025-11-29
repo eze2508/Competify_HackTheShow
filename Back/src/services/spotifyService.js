@@ -47,9 +47,24 @@ async function getCurrentlyPlaying(access_token) {
       headers: { Authorization: `Bearer ${access_token}` },
       validateStatus: status => status < 500
     });
-    if (res.status === 204) return null;
-    return res.data;
+    
+    console.log('🔍 [Spotify] getCurrentlyPlaying status:', res.status);
+    
+    if (res.status === 204) {
+      console.log('⚪ [Spotify] Status 204 - No hay reproducción activa');
+      return null;
+    }
+    
+    if (res.status === 200 && res.data) {
+      console.log('🎵 [Spotify] Reproduciendo:', res.data.item?.name || 'unknown');
+      console.log('🎵 [Spotify] is_playing:', res.data.is_playing);
+      return res.data;
+    }
+    
+    console.log('⚠️ [Spotify] Status inesperado:', res.status, 'Data:', res.data);
+    return null;
   } catch (err) {
+    console.error('🔴 [Spotify] Error en getCurrentlyPlaying:', err.response?.status, err.response?.data || err.message);
     throw err;
   }
 }
