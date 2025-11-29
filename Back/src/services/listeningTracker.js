@@ -1,7 +1,8 @@
 const supabase = require('../db/supabaseClient');
 const { refreshAccessTokenForUser, getCurrentlyPlaying } = require('./spotifyService');
 
-const pollingIntervalMs = 10000; // 10 segundos para evitar rate limiting de Spotify
+const pollingIntervalMs = 30000; // 30 segundos para evitar rate limiting de Spotify
+let rateLimitBackoff = 0; // Segundos adicionales de espera cuando hay rate limit
 
 // In-memory map to store current track per user (to detect changes)
 const activeMap = new Map(); // key: user.id, value: { trackId, startedAt, sessionId }
@@ -20,6 +21,18 @@ async function handleUser(user) {
     }
 
     const playing = await getCurrentlyPlaying(user.access_token);
+    
+    // Si hay rate limit, incrementar backoff
+    if (playing === 'RATE_LIMIT') {
+      rateLimitBackoff = Math.min(rateLimitBackoff + 60, 300); // Max 5 minutos
+      console.warn(`⚠️ [Tracker] Rate limit detectado, esperando ${rateLimitBackoff}s adicionales`);
+      return;
+    }
+    
+    // Si funciona, reducir backoff gradualmente
+    if (rateLimitBackoff > 0 && playing !== 'RATE_LIMIT') {
+      rateLimitBackoff = Math.max(0, rateLimitBackoff - 10);
+    }
     if (!playing || !playing.item || !playing.is_playing) {
       // nothing playing -> if we had an active session, close it
       const active = activeMap.get(user.id);
@@ -96,14 +109,21 @@ async function closeSession(userId, active) {
 
 async function tick() {
   try {
+    // Si hay backoff activo, saltar este tick
+    if (rateLimitBackoff > 0) {
+      console.log(`⏳ [Tracker] Esperando ${rateLimitBackoff}s por rate limit...`);
+      rateLimitBackoff = Math.max(0, rateLimitBackoff - (pollingIntervalMs / 1000));
+      return;
+    }
+    
     // get all users that have refresh_token (i.e., connected)
     const { data: users, error } = await supabase.from('users').select('*').not('refresh_token', 'is', null);
     if (error) {
       console.error('🔴 [Tracker] Error fetching users for tracker', error);
       return;
     }
-    // Solo log cada 6 ticks (1 minuto con polling de 10s)
-    if (Math.random() < 0.16) {
+    // Solo log cada 2 ticks (1 minuto con polling de 30s)
+    if (Math.random() < 0.5) {
       console.log(`🔵 [Tracker] Rastreando ${users?.length || 0} usuarios conectados`);
     }
     await Promise.all(users.map(u => handleUser(u)));
@@ -117,7 +137,8 @@ let intervalHandle = null;
 function start() {
   if (intervalHandle) return;
   intervalHandle = setInterval(tick, pollingIntervalMs);
-  console.log('ListeningTracker started, polling every', pollingIntervalMs, 'ms');
+  console.log(`🎵 ListeningTracker iniciado - Polling cada ${pollingIntervalMs/1000}s (${pollingIntervalMs}ms)`);
+  console.log(`⚡ Rate limit de Spotify: ~180 peticiones/minuto, usando ${60000/pollingIntervalMs} peticiones/min por usuario`);
 }
 
 function stop() {

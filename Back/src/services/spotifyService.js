@@ -51,8 +51,9 @@ async function getCurrentlyPlaying(access_token) {
     console.log('🔍 [Spotify] getCurrentlyPlaying status:', res.status);
     
     if (res.status === 429) {
-      console.warn('⚠️ [Spotify] Rate limit (429) - Demasiadas peticiones, saltando este tick');
-      return null;
+      const retryAfter = res.headers['retry-after'] || 60;
+      console.warn(`⚠️ [Spotify] Rate limit (429) - Retry después de ${retryAfter}s`);
+      return 'RATE_LIMIT'; // Señal especial para el tracker
     }
     
     if (res.status === 204) {
