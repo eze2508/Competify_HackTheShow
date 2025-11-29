@@ -57,8 +57,8 @@ exports.leaveClub = async (req, res) => {
       if (!member) return res.status(400).json({ error: 'not_in_club' });
       finalClubId = member.club_id;
     }
-    const clubId = finalClubId;
-    const result = await clubsSvc.leaveClubService({ userId, clubId });
+    
+    const result = await clubsSvc.leaveClubService({ userId, clubId: finalClubId });
     if (result.error) {
       const code = result.error.code;
       if (code === 'not_in_club') return res.status(400).json({ error: 'not_in_club' });
