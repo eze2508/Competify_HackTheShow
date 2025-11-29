@@ -235,7 +235,28 @@ async function listReceivedFriendRequests(userId) {
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
   
-  return error ? [] : data;
+  if (error || !data || data.length === 0) return [];
+  
+  // Get user info for all from_users
+  const fromUserIds = data.map(req => req.from_user);
+  const { data: users, error: usersError } = await supabase.from('users')
+    .select('id, spotify_id')
+    .in('id', fromUserIds);
+  
+  if (usersError) return data;
+  
+  // Map user info to requests
+  const userMap = {};
+  (users || []).forEach(u => {
+    userMap[u.id] = u;
+  });
+  
+  return data.map(req => ({
+    id: req.id,
+    from_user_id: req.from_user,
+    from_user_spotify_id: userMap[req.from_user]?.spotify_id || req.from_user,
+    created_at: req.created_at
+  }));
 }
 
 async function listSentFriendRequests(userId) {
@@ -245,7 +266,28 @@ async function listSentFriendRequests(userId) {
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
   
-  return error ? [] : data;
+  if (error || !data || data.length === 0) return [];
+  
+  // Get user info for all to_users
+  const toUserIds = data.map(req => req.to_user);
+  const { data: users, error: usersError } = await supabase.from('users')
+    .select('id, spotify_id')
+    .in('id', toUserIds);
+  
+  if (usersError) return data;
+  
+  // Map user info to requests
+  const userMap = {};
+  (users || []).forEach(u => {
+    userMap[u.id] = u;
+  });
+  
+  return data.map(req => ({
+    id: req.id,
+    to_user_id: req.to_user,
+    to_user_spotify_id: userMap[req.to_user]?.spotify_id || req.to_user,
+    created_at: req.created_at
+  }));
 }
 
 async function removeFriendsRelation(userId1, userId2) {

@@ -40,19 +40,19 @@ module.exports = {
   listFriends: async (req, res) => {
     const userId = req.user.id;
     const result = await friendsService.listFriends(userId);
-    res.json(result);
+    res.json({ friends: result || [] });
   },
 
   listReceived: async (req, res) => {
     const userId = req.user.id;
     const result = await friendsService.listReceived(userId);
-    res.json(result);
+    res.json({ requests: result || [] });
   },
 
   listSent: async (req, res) => {
     const userId = req.user.id;
     const result = await friendsService.listSent(userId);
-    res.json(result);
+    res.json({ requests: result || [] });
   },
 
   removeFriend: async (req, res) => {
