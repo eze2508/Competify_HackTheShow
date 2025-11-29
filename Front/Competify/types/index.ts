@@ -95,9 +95,15 @@ export interface StatsCardData {
 // Friends Types
 export interface FriendRequest {
   id: string;
-  from_user: string;
-  to_user: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
+  from_user?: string;
+  to_user?: string;
+  from_user_id?: string;
+  to_user_id?: string;
+  from_user_name?: string;
+  to_user_name?: string;
+  from_user_spotify_id?: string;
+  to_user_spotify_id?: string;
+  status?: 'pending' | 'accepted' | 'rejected' | 'cancelled';
   created_at: string;
   from_user_data?: {
     username: string;
@@ -112,6 +118,7 @@ export interface FriendRequest {
 export interface Friend {
   user_id: string;
   username: string;
+  avatar_url?: string;
   spotify_id?: string;
   hours?: number;
 }

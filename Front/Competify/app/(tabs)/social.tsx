@@ -262,7 +262,9 @@ export default function SocialScreen() {
           <Image source={{ uri: friend.avatar_url }} style={styles.avatar} />
         ) : (
           <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Ionicons name="person" size={24} color={SpotifyColors.lightGray} />
+            <ThemedText style={styles.avatarInitial}>
+              {friend.username?.charAt(0).toUpperCase() || '?'}
+            </ThemedText>
           </View>
         )}
         <View style={styles.cardInfo}>
@@ -693,9 +695,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatarPlaceholder: {
-    backgroundColor: SpotifyColors.darkGray,
+    backgroundColor: SpotifyColors.green,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarInitial: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: SpotifyColors.white,
   },
   cardInfo: {
     flex: 1,

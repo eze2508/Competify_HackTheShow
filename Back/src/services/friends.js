@@ -73,8 +73,9 @@ module.exports = {
     const enrichedFriends = await Promise.all(
       friends.map(async (friend) => {
         try {
-          if (friend.access_token) {
-            const response = await axios.get('https://api.spotify.com/v1/me', {
+          if (friend.access_token && friend.spotify_id) {
+            // Use the public profile endpoint instead of /me
+            const response = await axios.get(`https://api.spotify.com/v1/users/${friend.spotify_id}`, {
               headers: { Authorization: `Bearer ${friend.access_token}` }
             });
             return {
@@ -112,8 +113,8 @@ module.exports = {
         try {
           // Get the user's access token to fetch Spotify profile
           const fromUser = await db.getUserById(req.from_user_id);
-          if (fromUser && fromUser.access_token) {
-            const response = await axios.get('https://api.spotify.com/v1/me', {
+          if (fromUser && fromUser.access_token && fromUser.spotify_id) {
+            const response = await axios.get(`https://api.spotify.com/v1/users/${fromUser.spotify_id}`, {
               headers: { Authorization: `Bearer ${fromUser.access_token}` }
             });
             return {
@@ -147,8 +148,8 @@ module.exports = {
         try {
           // Get the user's access token to fetch Spotify profile
           const toUser = await db.getUserById(req.to_user_id);
-          if (toUser && toUser.access_token) {
-            const response = await axios.get('https://api.spotify.com/v1/me', {
+          if (toUser && toUser.access_token && toUser.spotify_id) {
+            const response = await axios.get(`https://api.spotify.com/v1/users/${toUser.spotify_id}`, {
               headers: { Authorization: `Bearer ${toUser.access_token}` }
             });
             return {
