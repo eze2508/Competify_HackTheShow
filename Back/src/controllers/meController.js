@@ -122,39 +122,20 @@ exports.profile = async (req, res) => {
     const weekHours = Math.floor(weekMs / (1000 * 60 * 60));
     console.log('🟢 [Profile] Sesiones esta semana:', weekData?.length, 'Total ms:', weekMs);
 
-    // Total unique artists
+    // Total unique artists - solo usar track_id por ahora
     const { data: artistsData, error: artistsError } = await supabase
       .from('listening_sessions')
-      .select('track_id, artist_id')
+      .select('track_id')
       .eq('user_id', user.id);
 
     if (artistsError) {
       console.error('🔴 [Profile] Error obteniendo tracks únicos:', artistsError);
     }
 
-    // Prefer artist_id stored in listening_sessions if available
-    let uniqueArtistIds = new Set();
-    const rows = artistsData || [];
-    if (rows.length > 0 && Object.prototype.hasOwnProperty.call(rows[0], 'artist_id')) {
-      // If the sessions already store artist_id, use it directly
-      rows.forEach(r => {
-        if (r.artist_id) uniqueArtistIds.add(r.artist_id);
-      });
-    } else {
-      // Fallback: resolve artist id per unique track by calling Spotify
-      // Limit number of lookups to avoid long running requests
-      const uniqueTrackIds = Array.from(new Set(rows.map(s => s.track_id))).slice(0, 200);
-      const axios = require('axios');
-      const lookups = await Promise.allSettled(uniqueTrackIds.map(trackId =>
-        axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
-          headers: { Authorization: `Bearer ${user.access_token}` }
-        }).then(r => r.data?.artists?.[0]?.id || null).catch(() => null)
-      ));
-      lookups.forEach(l => { if (l.status === 'fulfilled' && l.value) uniqueArtistIds.add(l.value); });
-    }
-
-    const totalArtists = uniqueArtistIds.size;
-    console.log('🟢 [Profile] Unique artist ids count:', totalArtists);
+    // Contar tracks únicos como proxy de artistas únicos
+    const uniqueTracks = new Set((artistsData || []).map(s => s.track_id));
+    const totalArtists = uniqueTracks.size;
+    console.log('🟢 [Profile] Tracks únicos (proxy artistas):', totalArtists);
 
     // Calculate rank based on total hours
     let rank = 'bronze';
@@ -220,20 +201,13 @@ exports.topArtists = async (req, res) => {
   const user = req.user;
   try {
     console.log('🔵 [TopArtists] Obteniendo top artistas para user_id:', user.id);
-
-    // Get all sessions with artist info and aggregate by artist
-    const { data: sessions, error } = await supabase
-      .from('listening_sessions')
-      .select('artist_name, artist_id, total_ms')
-      .eq('user_id', user.id)
-      .not('artist_name', 'is', null);
-
-    if (error) {
-      console.error('🔴 [TopArtists] Error:', error);
-      return res.status(500).json({ error: 'Error fetching artists' });
-    }
-
-    console.log('🟢 [TopArtists] Sesiones encontradas:', sessions?.length || 0);
+    console.log('⚠️ [TopArtists] Las columnas artist_name/artist_id aún no existen en la DB');
+    console.log('⚠️ [TopArtists] Ejecuta el script SQL en Back/migrations/add_artist_info_to_sessions.sql');
+    
+    // Por ahora devolver array vacío hasta que se ejecute el script SQL
+    console.log('🟢 [TopArtists] Retornando array vacío (columnas no disponibles)');
+    res.json({ artists: [] });
+    return;
 
     // Aggregate by artist
     const artistMap = new Map();

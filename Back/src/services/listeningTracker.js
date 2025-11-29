@@ -46,13 +46,10 @@ async function handleUser(user) {
       await closeSession(user.id, active);
     }
 
-    // open new session
+    // open new session - solo campos básicos por ahora
     const insert = {
       user_id: user.id,
       track_id: trackId,
-      track_name: trackName,
-      artist_name: artistName,
-      artist_id: artistId,
       started_at: new Date().toISOString(),
       ended_at: null,
       total_ms: 0
