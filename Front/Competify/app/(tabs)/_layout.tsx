@@ -6,13 +6,14 @@ import { HapticTab } from '@/components/haptic-tab';
 import { SpotifyColors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-const TabIcon = ({ source, focused }: { source: any; focused: boolean }) => (
+const TabIcon = ({ source, focused, size = 28 }: { source: any; focused: boolean; size?: number }) => (
   <Image
     source={source}
     style={{
-      width: 28,
-      height: 28,
+      width: size,
+      height: size,
       tintColor: focused ? SpotifyColors.green : SpotifyColors.lightGray,
+      marginBottom: 4,
     }}
     resizeMode="contain"
   />
@@ -51,7 +52,7 @@ export default function TabLayout() {
         options={{
           title: 'Search',
           tabBarIcon: ({ focused }) => (
-            <TabIcon source={require('@/assets/images/loupe.png')} focused={focused} />
+            <TabIcon source={require('@/assets/images/loupe.png')} focused={focused} size={24} />
           ),
         }}
       />
@@ -60,7 +61,7 @@ export default function TabLayout() {
         options={{
           title: 'Ranking',
           tabBarIcon: ({ focused }) => (
-            <TabIcon source={require('@/assets/images/podio.png')} focused={focused} />
+            <TabIcon source={require('@/assets/images/podio.png')} focused={focused} size={24} />
           ),
         }}
       />

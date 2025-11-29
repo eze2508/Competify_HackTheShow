@@ -65,13 +65,17 @@ export default function ProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header con avatar y nombre */}
         <View style={styles.header}>
-          <Image 
-            source={{ uri: MOCK_USER_DATA.avatarUrl }} 
-            style={[
-              styles.avatar,
-              { borderColor: getRankBorderColor(MOCK_USER_DATA.rank) }
-            ]}
-          />
+          <View style={styles.avatarContainer}>
+            <Image 
+              source={require('@/assets/images/GoldBorder.png')} 
+              style={styles.borderImage}
+              resizeMode="contain"
+            />
+            <Image 
+              source={{ uri: MOCK_USER_DATA.avatarUrl }} 
+              style={styles.avatar}
+            />
+          </View>
           <ThemedText style={styles.username}>{MOCK_USER_DATA.username}</ThemedText>
           <ThemedText style={styles.rankText}>{MOCK_USER_DATA.rank.toUpperCase()}</ThemedText>
         </View>
@@ -129,15 +133,15 @@ export default function ProfileScreen() {
           <View style={styles.achievementsContainer}>
             <View style={styles.achievement}>
               <Image source={achievementIcons.trophy} style={styles.achievementIcon} />
-              <ThemedText style={styles.achievementText}>Top 10 del Mes</ThemedText>
-            </View>
-            <View style={styles.achievement}>
-              <Image source={achievementIcons.flame} style={styles.achievementIcon} />
-              <ThemedText style={styles.achievementText}>7 días seguidos</ThemedText>
+              <ThemedText style={styles.achievementText}>Top 10{'\n'}del Mes</ThemedText>
             </View>
             <View style={styles.achievement}>
               <Image source={achievementIcons.star} style={styles.achievementIcon} />
-              <ThemedText style={styles.achievementText}>100 artistas</ThemedText>
+              <ThemedText style={styles.achievementText}>100{'\n'}artistas</ThemedText>
+            </View>
+            <View style={styles.achievement}>
+              <Image source={achievementIcons.flame} style={styles.achievementIcon} />
+              <ThemedText style={styles.achievementText}>7 días{'\n'}seguidos</ThemedText>
             </View>
           </View>
         </View>
@@ -170,12 +174,26 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     backgroundColor: SpotifyColors.darkGray,
   },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  avatarContainer: {
+    width: 140,
+    height: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
-    borderWidth: 5,
+    position: 'relative',
+  },
+  borderImage: {
+    width: 400,
+    height: 400,
+    position: 'absolute',
+    zIndex: 2,
+    top: -170,
+  },
+  avatar: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    zIndex: 1,
   },
   username: {
     fontSize: 28,
@@ -265,6 +283,7 @@ const styles = StyleSheet.create({
     color: SpotifyColors.white,
     textAlign: 'center',
     fontWeight: '600',
+    lineHeight: 16,
   },
   logoutButton: {
     backgroundColor: SpotifyColors.mediumGray,

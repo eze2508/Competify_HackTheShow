@@ -8,20 +8,21 @@ export type VinylRank = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 interface VinylBadgeProps {
   rank: VinylRank;
   size?: 'small' | 'medium' | 'large';
+  hideLabel?: boolean;
 }
 
 const vinylImages = {
-  bronze: require('@/assets/images/vinilos/vinyl-bronze.png'),
-  silver: require('@/assets/images/vinilos/vinyl-silver.png'),
+  bronze: require('@/assets/images/vinilos/bronze.png'),
+  silver: require('@/assets/images/vinilos/silver.png'),
   gold: require('@/assets/images/vinilos/gold.png'),
   platinum: require('@/assets/images/vinilos/gold.png'), // Usar gold como fallback
   diamond: require('@/assets/images/vinilos/gold.png'), // Usar gold como fallback
 };
 
-export function VinylBadge({ rank, size = 'medium' }: VinylBadgeProps) {
+export function VinylBadge({ rank, size = 'medium', hideLabel = false }: VinylBadgeProps) {
   const sizeStyles = {
     small: { width: 80, height: 80 },
-    medium: { width: 120, height: 120 },
+    medium: { width: 126, height: 126 },
     large: { width: 200, height: 200 },
   };
 
@@ -38,9 +39,11 @@ export function VinylBadge({ rank, size = 'medium' }: VinylBadgeProps) {
         style={[styles.vinylImage, sizeStyles[size]]}
         resizeMode="contain"
       />
-      <ThemedText style={[styles.rankText, { fontSize: fontSize[size] }]}>
-        {rank.toUpperCase()}
-      </ThemedText>
+      {!hideLabel && (
+        <ThemedText style={[styles.rankText, { fontSize: fontSize[size] }]}>
+          {rank.toUpperCase()}
+        </ThemedText>
+      )}
     </View>
   );
 }

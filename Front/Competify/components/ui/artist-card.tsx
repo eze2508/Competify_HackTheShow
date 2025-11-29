@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Image, Pressable, View, Dimensions } from 'react-native';
+import { Link } from 'expo-router';
 import { ThemedText } from '../themed-text';
 import { SpotifyColors } from '@/constants/theme';
 
@@ -22,7 +23,7 @@ interface ArtistCardProps {
   variant?: 'default' | 'search';
 }
 
-export function ArtistCard({ name, imageUrl, genres, followers, isTracked = false, onToggleTrack, onPress, variant = 'default' }: ArtistCardProps) {
+export function ArtistCard({ id, name, imageUrl, genres, followers, isTracked = false, onToggleTrack, onPress, variant = 'default' }: ArtistCardProps) {
   const [imageError, setImageError] = React.useState(false);
 
   return (

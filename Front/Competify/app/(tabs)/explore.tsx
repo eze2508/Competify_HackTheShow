@@ -7,7 +7,7 @@ import { SpotifyColors } from '@/constants/theme';
 import { ApiService } from '@/services/api';
 import { Artist } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'expo-router';
+import { useRouter, router as Router } from 'expo-router';
 
 const warningIcon = require('@/assets/images/warning.png');
 
@@ -234,7 +234,7 @@ export default function ArtistsScreen() {
               <FlatList
                 horizontal
                 data={section.artists}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                   <ArtistCard
                     id={item.id}
                     name={item.name}
@@ -243,10 +243,17 @@ export default function ArtistsScreen() {
                     followers={item.followers}
                     isTracked={trackedArtistIds.includes(item.id)}
                     onToggleTrack={() => toggleTrackArtist(item)}
-                    onPress={() => console.log('Pressed artist:', item.name)}
+                    onPress={() => {
+                      console.log('Navigating to artist:', item.name, item.id);
+                      try {
+                        router.push(`/artist-ranking?id=${item.id}&name=${encodeURIComponent(item.name)}&image=${encodeURIComponent(item.imageUrl)}`);
+                      } catch (error) {
+                        console.error('Navigation error:', error);
+                      }
+                    }}
                   />
                 )}
-                keyExtractor={(item) => `${section.id}-${item.id}`}
+                keyExtractor={(item, index) => `${section.id}-${item.id || index}`}
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalList}
               />

@@ -6,8 +6,10 @@ import { ArtistCard } from '@/components/ui/artist-card';
 import { SpotifyColors } from '@/constants/theme';
 import { ApiService } from '@/services/api';
 import { Artist } from '@/types';
+import { useRouter } from 'expo-router';
 
 export default function SearchScreen() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
@@ -116,7 +118,14 @@ export default function SearchScreen() {
                 followers={artist.followers}
                 isTracked={trackedArtistIds.includes(artist.id)}
                 onToggleTrack={() => toggleTrackArtist(artist)}
-                onPress={() => console.log('Pressed artist:', artist.name)}
+                onPress={() => {
+                  console.log('Navigating to artist:', artist.name, artist.id);
+                  try {
+                    router.push(`/artist-ranking?id=${artist.id}&name=${encodeURIComponent(artist.name)}&image=${encodeURIComponent(artist.imageUrl)}`);
+                  } catch (error) {
+                    console.error('Navigation error:', error);
+                  }
+                }}
                 variant="search"
               />
             ))}
