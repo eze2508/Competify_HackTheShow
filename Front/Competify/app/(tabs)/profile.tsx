@@ -79,11 +79,12 @@ export default function ProfileScreen() {
       console.log('🟢 [Profile] Datos recibidos:', JSON.stringify({
         user_id: user.id,
         username: user.username,
-        total_hours: user.total_hours,
-        total_ms: user.total_ms,
-        current_month_hours: user.current_month_hours,
-        current_week_hours: user.current_week_hours,
-        total_artists: user.total_artists,
+        // backend snake_case or ApiService mapped camelCase
+        total_hours: user.total_hours ?? user.totalHours,
+        total_ms: user.total_ms ?? user.totalMs ?? user.totalMilliseconds,
+        current_month_hours: user.current_month_hours ?? user.currentMonthHours,
+        current_week_hours: user.current_week_hours ?? user.currentWeekHours,
+        total_artists: user.total_artists ?? user.totalArtists,
         rank: user.rank
       }, null, 2));
       
@@ -108,11 +109,11 @@ export default function ProfileScreen() {
       ]);
       
       console.log('🟢 [Profile] Datos refrescados:', JSON.stringify({
-        total_hours: user.total_hours,
-        total_ms: user.total_ms,
-        current_month_hours: user.current_month_hours,
-        current_week_hours: user.current_week_hours,
-        total_artists: user.total_artists
+        total_hours: user.total_hours ?? user.totalHours,
+        total_ms: user.total_ms ?? user.totalMs ?? user.totalMilliseconds,
+        current_month_hours: user.current_month_hours ?? user.currentMonthHours,
+        current_week_hours: user.current_week_hours ?? user.currentWeekHours,
+        total_artists: user.total_artists ?? user.totalArtists
       }, null, 2));
       
       setUserId(user.id);
@@ -152,11 +153,12 @@ export default function ProfileScreen() {
     ...userData,
     username: userData.username || userData.display_name || 'Usuario',
     avatarUrl: userData.avatar_url || userData.avatarUrl || 'https://i.pravatar.cc/300',
-    totalHours: userData.total_hours || 0,
-    total_ms: userData.total_ms || 0,
-    currentMonthHours: userData.current_month_hours || 0,
-    currentWeekHours: userData.current_week_hours || 0,
-    totalArtists: userData.total_artists || 0,
+    // accept either backend snake_case or ApiService camelCase fields
+    totalHours: userData.totalHours ?? userData.total_hours ?? 0,
+    total_ms: userData.total_ms ?? userData.totalMs ?? userData.totalMilliseconds ?? 0,
+    currentMonthHours: userData.currentMonthHours ?? userData.current_month_hours ?? 0,
+    currentWeekHours: userData.currentWeekHours ?? userData.current_week_hours ?? 0,
+    totalArtists: userData.totalArtists ?? userData.total_artists ?? 0,
     rank: userData.rank || 'bronze'
   } : MOCK_USER_DATA;
   
