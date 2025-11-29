@@ -30,9 +30,6 @@ async function handleUser(user) {
 
     const track = playing.item;
     const trackId = track.id;
-    const trackName = track.name;
-    const artistName = track.artists?.[0]?.name || 'Unknown';
-    const artistId = track.artists?.[0]?.id || null;
     const now = new Date();
 
     const active = activeMap.get(user.id);
@@ -46,7 +43,7 @@ async function handleUser(user) {
       await closeSession(user.id, active);
     }
 
-    // open new session - solo campos básicos por ahora
+    // open new session
     const insert = {
       user_id: user.id,
       track_id: trackId,
@@ -54,12 +51,7 @@ async function handleUser(user) {
       ended_at: null,
       total_ms: 0
     };
-    console.log('🔵 [Tracker] Insertando nueva sesión:', { 
-      user_id: user.id, 
-      track_id: trackId, 
-      track_name: trackName,
-      artist_name: artistName
-    });
+    console.log('🔵 [Tracker] Insertando nueva sesión:', { user_id: user.id, track_id: trackId, track_name: track.name });
     const { data: inserted, error } = await supabase.from('listening_sessions').insert(insert).select().single();
     if (error) {
       console.error('🔴 [Tracker] Failed to insert session', error);

@@ -122,20 +122,20 @@ exports.profile = async (req, res) => {
     const weekHours = Math.floor(weekMs / (1000 * 60 * 60));
     console.log('🟢 [Profile] Sesiones esta semana:', weekData?.length, 'Total ms:', weekMs);
 
-    // Total unique artists - solo usar track_id por ahora
+    // Total unique artists
     const { data: artistsData, error: artistsError } = await supabase
       .from('listening_sessions')
       .select('track_id')
       .eq('user_id', user.id);
-
+    
     if (artistsError) {
       console.error('🔴 [Profile] Error obteniendo tracks únicos:', artistsError);
     }
-
-    // Contar tracks únicos como proxy de artistas únicos
+    
+    // Get unique track IDs (as a proxy for unique artists - could be improved)
     const uniqueTracks = new Set((artistsData || []).map(s => s.track_id));
     const totalArtists = uniqueTracks.size;
-    console.log('🟢 [Profile] Tracks únicos (proxy artistas):', totalArtists);
+    console.log('🟢 [Profile] Tracks únicos:', totalArtists);
 
     // Calculate rank based on total hours
     let rank = 'bronze';
@@ -193,71 +193,6 @@ exports.stats = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-};
-
-exports.topArtists = async (req, res) => {
-  const user = req.user;
-  try {
-    console.log('🔵 [TopArtists] Obteniendo top artistas para user_id:', user.id);
-    console.log('⚠️ [TopArtists] Las columnas artist_name/artist_id aún no existen en la DB');
-    console.log('⚠️ [TopArtists] Ejecuta el script SQL en Back/migrations/add_artist_info_to_sessions.sql');
-    
-    // Por ahora devolver array vacío hasta que se ejecute el script SQL
-    console.log('🟢 [TopArtists] Retornando array vacío (columnas no disponibles)');
-    res.json({ artists: [] });
-    return;
-
-    // Aggregate by artist
-    const artistMap = new Map();
-    (sessions || []).forEach(session => {
-      const artist = session.artist_name;
-      const current = artistMap.get(artist) || { 
-        name: artist, 
-        artist_id: session.artist_id,
-        total_ms: 0 
-      };
-      current.total_ms += session.total_ms || 0;
-      artistMap.set(artist, current);
-    });
-
-    // Convert to array and sort
-    const topArtists = Array.from(artistMap.values())
-      .sort((a, b) => b.total_ms - a.total_ms)
-      .slice(0, 5)
-      .map((artist, index) => {
-        const hours = Math.floor(artist.total_ms / (1000 * 60 * 60));
-        console.log(`🟢 [TopArtists] #${index + 1}: ${artist.name} - ${hours}h`);
-        return {
-          id: artist.artist_id || artist.name,
-          name: artist.name,
-          hours: hours,
-          total_ms: artist.total_ms
-        };
-      });
-
-    // Get images from Spotify API for the top artists
-    if (user.access_token) {
-      const axios = require('axios');
-      for (let artist of topArtists) {
-        if (artist.id && artist.id !== artist.name) {
-          try {
-            const spotifyArtist = await axios.get(`https://api.spotify.com/v1/artists/${artist.id}`, {
-              headers: { Authorization: `Bearer ${user.access_token}` }
-            });
-            artist.image_url = spotifyArtist.data.images?.[0]?.url || null;
-          } catch (err) {
-            console.error('Error fetching artist image:', err.message);
-          }
-        }
-      }
-    }
-
-    console.log('🟢 [TopArtists] Respuesta final:', topArtists.length, 'artistas');
-    res.json({ artists: topArtists });
-  } catch (err) {
-    console.error('🔴 [TopArtists] Error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 };

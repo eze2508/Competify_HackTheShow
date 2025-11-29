@@ -71,15 +71,15 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
       console.log('🔵 [Profile] Cargando datos del perfil...');
-      const [user, realArtists, spotifyArtists] = await Promise.all([
+      const [user, artists] = await Promise.all([
         ApiService.getCurrentUser(),
-        ApiService.getTopArtistsReal().catch(() => []),
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
       
       console.log('🟢 [Profile] Datos recibidos:', JSON.stringify({
         user_id: user.id,
         username: user.username,
+        // backend snake_case or ApiService mapped camelCase
         total_hours: user.total_hours ?? user.totalHours,
         total_ms: user.total_ms ?? user.totalMs ?? user.totalMilliseconds,
         current_month_hours: user.current_month_hours ?? user.currentMonthHours,
@@ -88,13 +88,9 @@ export default function ProfileScreen() {
         rank: user.rank
       }, null, 2));
       
-      console.log('🟢 [Profile] Artistas reales:', realArtists.length);
-      console.log('🟢 [Profile] Artistas Spotify:', spotifyArtists.length);
-      
       setUserId(user.id);
       setUserData(user);
-      // Priorizar artistas reales si existen, sino usar Spotify
-      setTopArtists(realArtists.length > 0 ? realArtists : spotifyArtists);
+      setTopArtists(artists);
     } catch (error) {
       console.error('🔴 [Profile] Error loading profile data:', error);
       Alert.alert('Error', `No se pudo cargar el perfil: ${error.message}`);
@@ -107,9 +103,8 @@ export default function ProfileScreen() {
     setRefreshing(true);
     try {
       console.log('🔵 [Profile] Refrescando datos del perfil...');
-      const [user, realArtists, spotifyArtists] = await Promise.all([
+      const [user, artists] = await Promise.all([
         ApiService.getCurrentUser(),
-        ApiService.getTopArtistsReal().catch(() => []),
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
       
@@ -123,7 +118,7 @@ export default function ProfileScreen() {
       
       setUserId(user.id);
       setUserData(user);
-      setTopArtists(realArtists.length > 0 ? realArtists : spotifyArtists);
+      setTopArtists(artists);
     } catch (error) {
       console.error('🔴 [Profile] Error refreshing profile data:', error);
       Alert.alert('Error', `No se pudo actualizar el perfil: ${error.message}`);
