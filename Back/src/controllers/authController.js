@@ -18,7 +18,10 @@ if (!JWT_SECRET) {
 const scopes = [
   'user-read-currently-playing',
   'user-read-playback-state',
-  'user-read-recently-played'
+  'user-read-recently-played',
+  'user-top-read',  // Para obtener top artistas
+  'user-read-email',  // Para obtener email del usuario
+  'user-read-private'  // Para obtener información del perfil
 ].join(' ');
 
 exports.login = (req, res) => {
