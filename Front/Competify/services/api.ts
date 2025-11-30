@@ -159,13 +159,16 @@ export class ApiService {
    */
   static async getTrackedArtists(): Promise<Artist[]> {
     const data = await fetchWithAuth('/artists/tracked');
-    return data.map((item: any) => ({
-      id: item.artist_id,
-      name: item.artist_name,
-      imageUrl: item.artist_image_url,
-      genres: item.genres || [],
-      followers: 0
-    }));
+
+    return data
+      .filter((item: any) => item.artist_id && item.artist_name) // ⬅️ filtra null/undefined/""
+      .map((item: any) => ({
+        id: item.artist_id,
+        name: item.artist_name,
+        imageUrl: item.artist_image_url,
+        genres: item.genres || [],
+        followers: 0
+      }));
   }
 
   /**
