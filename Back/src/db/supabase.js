@@ -130,7 +130,13 @@ async function getTotalMsPerUserForClub(club_id) {
     .select('user_id, total_ms')
     .in('user_id', userIds);
 
-  if (error) return { error };
+  if (error) {
+    console.error('🔴 [DB] Error getting listening_sessions:', error);
+    // Si la tabla no existe o hay error, retornar mapa vacío en lugar de fallar
+    const emptyMap = {};
+    userIds.forEach(id => emptyMap[id] = 0);
+    return { data: emptyMap };
+  }
 
   const map = {};
   (data || []).forEach(r => {

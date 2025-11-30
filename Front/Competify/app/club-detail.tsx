@@ -28,16 +28,35 @@ export default function ClubDetailScreen() {
   const loadClubData = useCallback(async () => {
     try {
       setLoading(true);
-      const [membersData, messagesData] = await Promise.all([
-        ApiService.getClubMembers(clubId),
-        ApiService.getClubMessages(clubId),
-      ]);
+      console.log('🔵 [ClubDetail] Loading club data for clubId:', clubId);
+      
+      // Load members and messages separately to see which one fails
+      let membersData = { members: [] };
+      let messagesData = { messages: [] };
+      
+      try {
+        console.log('🔵 [ClubDetail] Loading members...');
+        membersData = await ApiService.getClubMembers(clubId);
+        console.log('🟢 [ClubDetail] Members loaded:', membersData.members?.length || 0);
+      } catch (error: any) {
+        console.error('🔴 [ClubDetail] Error loading members:', error);
+        throw new Error(`Members error: ${error.message || error}`);
+      }
+
+      try {
+        console.log('🔵 [ClubDetail] Loading messages...');
+        messagesData = await ApiService.getClubMessages(clubId);
+        console.log('🟢 [ClubDetail] Messages loaded:', messagesData.messages?.length || 0);
+      } catch (error: any) {
+        console.error('🔴 [ClubDetail] Error loading messages:', error);
+        throw new Error(`Messages error: ${error.message || error}`);
+      }
 
       setMembers(membersData.members || []);
       setMessages(messagesData.messages || []);
-    } catch (error) {
-      console.error('Error loading club data:', error);
-      Alert.alert('Error', 'No se pudo cargar la información del club');
+    } catch (error: any) {
+      console.error('🔴 [ClubDetail] Error loading club data:', error);
+      Alert.alert('Error', `No se pudo cargar la información del club: ${error.message}`);
     } finally {
       setLoading(false);
     }
