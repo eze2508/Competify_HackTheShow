@@ -138,6 +138,7 @@ export interface ClubMember {
   username: string;
   joined_at: string;
   hours_listened?: number;
+  avatar_url?: string;
 }
 
 export interface ClubMessage {

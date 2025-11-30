@@ -188,7 +188,7 @@ async function membersOfClubService({ clubId }) {
   const userIds = members.map(m => m.user_id);
   const { data: users, error: usersErr } = await supabase
     .from('users')
-    .select('id, display_name')
+    .select('id, display_name, avatar_url')
     .in('id', userIds);
   
   if (usersErr) {
@@ -200,8 +200,10 @@ async function membersOfClubService({ clubId }) {
 
   // Create user map for easy lookup
   const userMap = {};
+  const avatarMap = {};
   (users || []).forEach(u => {
     userMap[u.id] = u.display_name || 'Usuario';
+    avatarMap[u.id] = u.avatar_url || null;
   });
 
   // compute total listening hours per user (sum total_ms)
@@ -219,6 +221,7 @@ async function membersOfClubService({ clubId }) {
     return {
       user_id: m.user_id,
       username: userMap[m.user_id] || 'Usuario',
+      avatar_url: avatarMap[m.user_id] || null,
       joined_at: m.joined_at,
       hours_listened: Math.round((totalMs / 1000 / 60 / 60) * 10) / 10 // one decimal
     };
