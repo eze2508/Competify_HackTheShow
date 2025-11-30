@@ -200,15 +200,20 @@ exports.getMembers = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
+    console.log('🔵 [Clubs] getMessages - clubId:', req.params.clubId);
     const clubId = req.params.clubId;
     const limit = parseInt(req.query.limit) || 50;
     const before = req.query.before || null;
 
     const result = await clubsSvc.getMessagesService({ clubId, limit, before });
-    if (result.error) return res.status(500).json({ error: 'server_error' });
+    if (result.error) {
+      console.error('🔴 [Clubs] getMessages error:', result.error);
+      return res.status(500).json({ error: 'server_error' });
+    }
+    console.log('🟢 [Clubs] getMessages success - messages:', result.data?.messages?.length || 0);
     return res.json(result.data);
   } catch (err) {
-    console.error('getMessages controller error', err);
+    console.error('🔴 [Clubs] getMessages controller error', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };

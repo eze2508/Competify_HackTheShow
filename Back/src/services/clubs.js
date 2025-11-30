@@ -215,13 +215,29 @@ async function membersOfClubService({ clubId }) {
 }
 
 async function getMessagesService({ clubId, limit = 50, before }) {
-  const { data, error } = await db.getClubMessages(clubId, limit, before);
-  if (error) return { error };
+  console.log('🔵 [Clubs] getMessagesService - clubId:', clubId);
+  const messagesResult = await db.getClubMessages(clubId, limit, before);
+  if (messagesResult.error) {
+    console.error('🔴 [Clubs] Error getting messages:', messagesResult.error);
+    return { error: messagesResult.error };
+  }
 
-  const messages = data || [];
+  const messages = messagesResult.data || [];
+  console.log('🔵 [Clubs] Messages found:', messages.length);
+
+  if (messages.length === 0) {
+    return { data: { messages: [] } };
+  }
+
   // fetch usernames for user_ids
   const userIds = Array.from(new Set(messages.map(m => m.user_id)));
-  const { data: users } = await supabase.from('users').select('id, display_name, username').in('id', userIds);
+  const { data: users, error: usersErr } = await supabase.from('users').select('id, display_name, username').in('id', userIds);
+  
+  if (usersErr) {
+    console.error('🔴 [Clubs] Error getting users for messages:', usersErr);
+    return { error: usersErr };
+  }
+
   const userMap = {};
   (users || []).forEach(u => userMap[u.id] = u.display_name || u.username || 'Usuario');
 
@@ -232,7 +248,8 @@ async function getMessagesService({ clubId, limit = 50, before }) {
     created_at: m.created_at
   }));
 
-  return { data: result };
+  console.log('🟢 [Clubs] Returning messages:', result.length);
+  return { data: { messages: result } };
 }
 
 async function postMessageService({ clubId, userId, message }) {
