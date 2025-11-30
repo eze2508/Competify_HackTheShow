@@ -162,10 +162,18 @@ export default function ProfileScreen() {
     rank: userData.rank || 'bronze'
   } : MOCK_USER_DATA;
   
+  // Calcular tiempo detallado para mostrar
+  const totalMs = displayData.total_ms || displayData.totalHours * 3600000;
+  const days = Math.floor(totalMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((totalMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((totalMs % (1000 * 60)) / 1000);
+  
   console.log('🟡 [Profile] displayData final:', {
     usando_mock: !userData,
     totalHours: displayData.totalHours,
     total_ms: displayData.total_ms,
+    tiempo_mostrado: `${days}d ${hours}h ${minutes}m ${seconds}s`,
     currentMonthHours: displayData.currentMonthHours,
     currentWeekHours: displayData.currentWeekHours,
     totalArtists: displayData.totalArtists
