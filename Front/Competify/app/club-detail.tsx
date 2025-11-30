@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
@@ -121,41 +121,25 @@ export default function ClubDetailScreen() {
       );
     }
 
-    return members.map((member, index) => {
-      const username = member.username || 'Usuario';
-      const hasAvatar = member.avatar_url && !member.avatar_url.includes('pravatar');
-      
-      return (
-        <View key={member.user_id} style={styles.memberCard}>
-          <View style={styles.memberInfo}>
-            {hasAvatar ? (
-              <Image 
-                source={{ uri: member.avatar_url }} 
-                style={styles.memberAvatar}
-              />
-            ) : (
-              <View style={styles.memberAvatarPlaceholder}>
-                <ThemedText style={styles.memberAvatarInitial}>
-                  {username.charAt(0).toUpperCase()}
-                </ThemedText>
-              </View>
-            )}
-            <View style={styles.memberDetails}>
-              <View style={styles.memberHeader}>
-                <ThemedText style={styles.memberName}>{username}</ThemedText>
-                <ThemedText style={styles.memberRank}>#{index + 1}</ThemedText>
-              </View>
-              <ThemedText style={styles.memberDate}>
-                {member.hours_listened || 0}h escuchadas
-              </ThemedText>
-              <ThemedText style={styles.memberJoined}>
-                Desde {new Date(member.joined_at).toLocaleDateString()}
-              </ThemedText>
+    return members.map((member, index) => (
+      <View key={member.user_id} style={styles.memberCard}>
+        <View style={styles.memberInfo}>
+          <Ionicons name="person-circle-outline" size={40} color={SpotifyColors.green} />
+          <View style={styles.memberDetails}>
+            <View style={styles.memberHeader}>
+              <ThemedText style={styles.memberName}>{member.username || 'Usuario'}</ThemedText>
+              <ThemedText style={styles.memberRank}>#{index + 1}</ThemedText>
             </View>
+            <ThemedText style={styles.memberDate}>
+              {member.hours_listened || 0}h escuchadas
+            </ThemedText>
+            <ThemedText style={styles.memberJoined}>
+              Desde {new Date(member.joined_at).toLocaleDateString()}
+            </ThemedText>
           </View>
         </View>
-      );
-    });
+      </View>
+    ));
   };
 
   const renderChat = () => {
@@ -346,26 +330,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  memberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  memberAvatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: SpotifyColors.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  memberAvatarInitial: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: SpotifyColors.white,
-    lineHeight: 20,
-    includeFontPadding: false,
   },
   memberDetails: {
     flex: 1,
