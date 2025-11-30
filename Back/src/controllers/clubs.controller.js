@@ -183,12 +183,17 @@ exports.cleanOrphanMembership = async (req, res) => {
 
 exports.getMembers = async (req, res) => {
   try {
+    console.log('🔵 [Clubs] getMembers - clubId:', req.params.clubId);
     const clubId = req.params.clubId;
     const result = await clubsSvc.membersOfClubService({ clubId });
-    if (result.error) return res.status(500).json({ error: 'server_error' });
+    if (result.error) {
+      console.error('🔴 [Clubs] getMembers error:', result.error);
+      return res.status(500).json({ error: 'server_error' });
+    }
+    console.log('🟢 [Clubs] getMembers success');
     return res.json(result.data);
   } catch (err) {
-    console.error('getMembers controller error', err);
+    console.error('🔴 [Clubs] getMembers controller error', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };

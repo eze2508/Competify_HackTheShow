@@ -156,25 +156,53 @@ async function listClubsService({ page = 1, limit = 10 }) {
 
 async function membersOfClubService({ clubId }) {
   // get members
-  const { data: members, error } = await db.getMembersByClubId(clubId);
-  if (error) return { error };
+  const membersResult = await db.getMembersByClubId(clubId);
+  if (membersResult.error) {
+    console.error('🔴 [Clubs] Error getting members:', membersResult.error);
+    return { error: membersResult.error };
+  }
+
+  const members = membersResult.data || [];
+  console.log('🔵 [Clubs] Members found:', members.length);
+
+  if (members.length === 0) {
+    return { data: { members: [] } };
+  }
 
   // get user info
-  const userIds = (members.data || members).map(m => m.user_id);
-  // fetch users
-  const { data: users, error: usersErr } = await supabase.from('users').select('id, display_name, username').in('id', userIds);
-  if (usersErr) return { error: usersErr };
+  const userIds = members.map(m => m.user_id);
+  const { data: users, error: usersErr } = await supabase
+    .from('users')
+    .select('id, display_name, username')
+    .in('id', userIds);
+  
+  if (usersErr) {
+    console.error('🔴 [Clubs] Error getting users:', usersErr);
+    return { error: usersErr };
+  }
+
+  console.log('🔵 [Clubs] Users found:', users?.length);
+
+  // Create user map for easy lookup
+  const userMap = {};
+  (users || []).forEach(u => {
+    userMap[u.id] = u.display_name || u.username || 'Usuario';
+  });
 
   // compute total listening hours per user (sum total_ms)
-  // reuse db helper
   const { data: totalMap, error: mapErr } = await db.getTotalMsPerUserForClub(clubId);
-  if (mapErr) return { error: mapErr };
+  if (mapErr) {
+    console.error('🔴 [Clubs] Error getting total ms:', mapErr);
+    return { error: mapErr };
+  }
 
-  // build result array
-  const result = users.map(u => {
-    const totalMs = totalMap[u.id] || 0;
+  // build result array with all required fields
+  const result = members.map(m => {
+    const totalMs = totalMap[m.user_id] || 0;
     return {
-      username: u.display_name || u.username || 'Usuario',
+      user_id: m.user_id,
+      username: userMap[m.user_id] || 'Usuario',
+      joined_at: m.joined_at,
       hours_listened: Math.round((totalMs / 1000 / 60 / 60) * 10) / 10 // one decimal
     };
   });
@@ -182,7 +210,8 @@ async function membersOfClubService({ clubId }) {
   // sort desc by hours_listened
   result.sort((a, b) => b.hours_listened - a.hours_listened);
 
-  return { data: result };
+  console.log('🟢 [Clubs] Returning members:', result.length);
+  return { data: { members: result } };
 }
 
 async function getMessagesService({ clubId, limit = 50, before }) {
