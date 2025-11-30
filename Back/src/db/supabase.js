@@ -45,8 +45,9 @@ async function countMembers(club_id) {
 
 async function searchClubsByName(name, limit = 20) {
   // case-insensitive search using ilike
+  console.log('🔵 [DB] searchClubsByName - name:', name, 'limit:', limit);
   return supabase.from('clubs')
-    .select('id, name')
+    .select('id, name, owner_id, created_at')
     .ilike('name', `%${name}%`)
     .limit(limit);
 }

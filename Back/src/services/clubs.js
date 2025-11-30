@@ -96,20 +96,33 @@ async function leaveClubService({ userId, clubId }) {
 }
 
 async function searchClubsService({ name, limit = 20 }) {
-  const { data, error } = await db.searchClubsByName(name, limit);
-  if (error) return { error };
-  const clubs = data || [];
+  console.log('🔵 [Clubs] searchClubsService - name:', name, 'limit:', limit);
+  const searchResult = await db.searchClubsByName(name, limit);
+  if (searchResult.error) {
+    console.error('🔴 [Clubs] Error searching clubs:', searchResult.error);
+    return { error: searchResult.error };
+  }
+  const clubs = searchResult.data || [];
+  console.log('🔵 [Clubs] Found clubs:', clubs.length);
+
+  if (clubs.length === 0) {
+    return { data: { clubs: [] } };
+  }
 
   // count members for each club
   const clubIds = clubs.map(c => c.id);
   const counts = await db.getClubMemberCountMap(clubIds);
 
-  const result = (clubs || []).map(c => ({
+  const result = clubs.map(c => ({
     id: c.id,
     name: c.name,
+    owner_id: c.owner_id,
+    created_at: c.created_at,
     cantidad_de_miembros: counts[c.id] || 0
   }));
-  return { data: result };
+  
+  console.log('🟢 [Clubs] Returning search results:', result.length);
+  return { data: { clubs: result } };
 }
 
 async function getUserClubService({ userId }) {

@@ -74,14 +74,23 @@ exports.leaveClub = async (req, res) => {
 
 exports.searchClubs = async (req, res) => {
   try {
+    console.log('🔵 [Clubs] searchClubs - query:', req.query);
     const { name } = req.query;
-    if (!name || name.trim() === '') return res.status(400).json({ error: 'name_required' });
+    if (!name || name.trim() === '') {
+      console.log('🔴 [Clubs] searchClubs - name is required');
+      return res.status(400).json({ error: 'name_required' });
+    }
 
+    console.log('🔵 [Clubs] searchClubs - searching for:', name.trim());
     const result = await clubsSvc.searchClubsService({ name: name.trim(), limit: 20 });
-    if (result.error) return res.status(500).json({ error: 'server_error' });
+    if (result.error) {
+      console.error('🔴 [Clubs] searchClubs error:', result.error);
+      return res.status(500).json({ error: 'server_error' });
+    }
+    console.log('🟢 [Clubs] searchClubs success - clubs:', result.data?.clubs?.length || 0);
     return res.json(result.data);
   } catch (err) {
-    console.error('searchClubs controller error', err);
+    console.error('🔴 [Clubs] searchClubs controller error', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };
