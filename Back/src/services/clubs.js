@@ -173,7 +173,7 @@ async function membersOfClubService({ clubId }) {
   const userIds = members.map(m => m.user_id);
   const { data: users, error: usersErr } = await supabase
     .from('users')
-    .select('id, display_name, username')
+    .select('id, display_name')
     .in('id', userIds);
   
   if (usersErr) {
@@ -186,14 +186,16 @@ async function membersOfClubService({ clubId }) {
   // Create user map for easy lookup
   const userMap = {};
   (users || []).forEach(u => {
-    userMap[u.id] = u.display_name || u.username || 'Usuario';
+    userMap[u.id] = u.display_name || 'Usuario';
   });
 
   // compute total listening hours per user (sum total_ms)
-  const { data: totalMap, error: mapErr } = await db.getTotalMsPerUserForClub(clubId);
-  if (mapErr) {
-    console.error('🔴 [Clubs] Error getting total ms:', mapErr);
-    return { error: mapErr };
+  const totalResult = await db.getTotalMsPerUserForClub(clubId);
+  // Si hay error en listening_sessions, usar mapa vacío (0 horas para todos)
+  const totalMap = totalResult.data || {};
+  
+  if (totalResult.error) {
+    console.warn('⚠️ [Clubs] Warning getting total ms (using 0 for all):', totalResult.error);
   }
 
   // build result array with all required fields
@@ -231,7 +233,7 @@ async function getMessagesService({ clubId, limit = 50, before }) {
 
   // fetch usernames for user_ids
   const userIds = Array.from(new Set(messages.map(m => m.user_id)));
-  const { data: users, error: usersErr } = await supabase.from('users').select('id, display_name, username').in('id', userIds);
+  const { data: users, error: usersErr } = await supabase.from('users').select('id, display_name').in('id', userIds);
   
   if (usersErr) {
     console.error('🔴 [Clubs] Error getting users for messages:', usersErr);
@@ -239,7 +241,7 @@ async function getMessagesService({ clubId, limit = 50, before }) {
   }
 
   const userMap = {};
-  (users || []).forEach(u => userMap[u.id] = u.display_name || u.username || 'Usuario');
+  (users || []).forEach(u => userMap[u.id] = u.display_name || 'Usuario');
 
   const result = messages.map(m => ({
     id: m.id,
