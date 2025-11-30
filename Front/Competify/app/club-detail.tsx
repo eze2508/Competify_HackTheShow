@@ -120,13 +120,19 @@ export default function ClubDetailScreen() {
       );
     }
 
-    return members.map((member) => (
+    return members.map((member, index) => (
       <View key={member.user_id} style={styles.memberCard}>
         <View style={styles.memberInfo}>
           <Ionicons name="person-circle-outline" size={40} color={SpotifyColors.green} />
           <View style={styles.memberDetails}>
-            <ThemedText style={styles.memberName}>{member.username}</ThemedText>
+            <View style={styles.memberHeader}>
+              <ThemedText style={styles.memberName}>{member.username || 'Usuario'}</ThemedText>
+              <ThemedText style={styles.memberRank}>#{index + 1}</ThemedText>
+            </View>
             <ThemedText style={styles.memberDate}>
+              {member.hours_listened || 0}h escuchadas
+            </ThemedText>
+            <ThemedText style={styles.memberJoined}>
               Desde {new Date(member.joined_at).toLocaleDateString()}
             </ThemedText>
           </View>
@@ -327,14 +333,30 @@ const styles = StyleSheet.create({
   memberDetails: {
     flex: 1,
   },
+  memberHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   memberName: {
     fontSize: 16,
     fontWeight: '600',
     color: SpotifyColors.white,
-    marginBottom: 4,
+  },
+  memberRank: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: SpotifyColors.green,
   },
   memberDate: {
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '600',
+    color: SpotifyColors.green,
+    marginBottom: 2,
+  },
+  memberJoined: {
+    fontSize: 11,
     color: SpotifyColors.lightGray,
   },
   messageCard: {

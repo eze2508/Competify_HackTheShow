@@ -75,27 +75,14 @@ export default function ProfileScreen() {
         ApiService.getCurrentUser(),
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
-      
-      console.log('🟢 [Profile] Datos recibidos:', JSON.stringify({
-        user_id: user.id,
-        username: user.username,
-        // backend snake_case or ApiService mapped camelCase
-        total_hours: user.total_hours ?? user.totalHours,
-        total_ms: user.total_ms ?? user.totalMs ?? user.totalMilliseconds,
-        current_month_hours: user.current_month_hours ?? user.currentMonthHours,
-        current_week_hours: user.current_week_hours ?? user.currentWeekHours,
-        total_artists: user.total_artists ?? user.totalArtists,
-        rank: user.rank
-      }, null, 2));
+
       
       setUserId(user.id);
       setUserData(user);
       setTopArtists(artists);
-    } catch (error) {
-      console.error('🔴 [Profile] Error loading profile data:', error);
-      Alert.alert('Error', `No se pudo cargar el perfil: ${error.message}`);
-    } finally {
-      setLoading(false);
+    }
+    finally {
+
     }
   };
 
@@ -108,23 +95,10 @@ export default function ProfileScreen() {
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
       
-      console.log('🟢 [Profile] Datos refrescados:', JSON.stringify({
-        total_hours: user.total_hours ?? user.totalHours,
-        total_ms: user.total_ms ?? user.totalMs ?? user.totalMilliseconds,
-        current_month_hours: user.current_month_hours ?? user.currentMonthHours,
-        current_week_hours: user.current_week_hours ?? user.currentWeekHours,
-        total_artists: user.total_artists ?? user.totalArtists
-      }, null, 2));
-      
       setUserId(user.id);
       setUserData(user);
       setTopArtists(artists);
-    } catch (error) {
-      console.error('🔴 [Profile] Error refreshing profile data:', error);
-      Alert.alert('Error', `No se pudo actualizar el perfil: ${error.message}`);
     } finally {
-      setRefreshing(false);
-    }
   };
 
   const copyUserId = async () => {
