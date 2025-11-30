@@ -80,9 +80,11 @@ export default function ProfileScreen() {
       setUserId(user.id);
       setUserData(user);
       setTopArtists(artists);
-    }
-    finally {
-
+    } catch (error) {
+      console.error('🔴 [Profile] Error loading profile data:', error);
+      Alert.alert('Error', `No se pudo cargar el perfil: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 

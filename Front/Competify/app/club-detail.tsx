@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
@@ -124,7 +124,18 @@ export default function ClubDetailScreen() {
     return members.map((member, index) => (
       <View key={member.user_id} style={styles.memberCard}>
         <View style={styles.memberInfo}>
-          <Ionicons name="person-circle-outline" size={40} color={SpotifyColors.green} />
+          {member.avatar_url ? (
+            <Image 
+              source={{ uri: member.avatar_url }} 
+              style={styles.memberAvatar}
+            />
+          ) : (
+            <View style={styles.memberAvatarPlaceholder}>
+              <ThemedText style={styles.memberAvatarInitial}>
+                {(member.username || 'U').charAt(0).toUpperCase()}
+              </ThemedText>
+            </View>
+          )}
           <View style={styles.memberDetails}>
             <View style={styles.memberHeader}>
               <ThemedText style={styles.memberName}>{member.username || 'Usuario'}</ThemedText>
@@ -330,6 +341,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  memberAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: SpotifyColors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberAvatarInitial: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: SpotifyColors.white,
+    lineHeight: 20,
+    includeFontPadding: false,
   },
   memberDetails: {
     flex: 1,
