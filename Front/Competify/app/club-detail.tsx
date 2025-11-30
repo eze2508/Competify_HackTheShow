@@ -38,6 +38,7 @@ export default function ClubDetailScreen() {
         console.log('🔵 [ClubDetail] Loading members...');
         membersData = await ApiService.getClubMembers(clubId);
         console.log('🟢 [ClubDetail] Members loaded:', membersData.members?.length || 0);
+        console.log('🟢 [ClubDetail] Members data:', JSON.stringify(membersData.members, null, 2));
       } catch (error: any) {
         console.error('🔴 [ClubDetail] Error loading members:', error);
         throw new Error(`Members error: ${error.message || error}`);

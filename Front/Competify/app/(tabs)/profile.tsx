@@ -99,6 +99,8 @@ export default function ProfileScreen() {
       setUserData(user);
       setTopArtists(artists);
     } finally {
+      setRefreshing(false);
+    }
   };
 
   const copyUserId = async () => {

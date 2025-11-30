@@ -128,12 +128,14 @@ async function getUserClubService({ userId }) {
   // Obtener cantidad de miembros
   const counts = await db.getClubMemberCountMap([club.id]);
 
+  const memberCount = counts[club.id] || 0;
   return {
     data: {
       id: club.id,
       name: club.name,
       owner_id: club.owner_id,
-      member_count: counts[club.id] || 0,
+      member_count: memberCount,
+      cantidad_de_miembros: memberCount, // Para compatibilidad con frontend
       created_at: club.created_at
     }
   };
