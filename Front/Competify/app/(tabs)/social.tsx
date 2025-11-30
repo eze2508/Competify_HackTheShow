@@ -270,7 +270,13 @@ export default function SocialScreen() {
 
     return friends.map((friend, index) => {
       // Prefer the same field used in club members: hours_listened
-      const hoursListened = (friend.hours_listened ?? friend.total_hours ?? friend.hours ?? friend.totalHours ?? 0) as number;
+      // If backend provides total_ms (ms), compute hours with same formula used in clubs service
+      const computeHoursFromMs = (totalMs: number) => Math.round((totalMs / 1000 / 60 / 60) * 10) / 10;
+      const hoursListened = (friend.hours_listened !== undefined && friend.hours_listened !== null)
+        ? friend.hours_listened
+        : (friend.total_ms || friend.totalMs || friend.totalMilliseconds)
+          ? computeHoursFromMs((friend.total_ms || friend.totalMs || friend.totalMilliseconds) as number)
+          : (friend.total_hours ?? friend.hours ?? friend.totalHours ?? 0) as number;
 
       return (
         <Pressable
