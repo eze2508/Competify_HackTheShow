@@ -74,6 +74,10 @@ async function getCurrentlyPlaying(access_token) {
       console.log('⚠️ [Spotify] Unauthorized (401) - Token may have expired');
       return null;
     }
+    if (res.status === 404) {
+      console.log('⚪ [Spotify] Not Found (404) - No active device');
+      return null;
+    }
     console.log('⚠️ [Spotify] Status inesperado:', res.status, 'Data:', res.data);
     return null;
   } catch (err) {
