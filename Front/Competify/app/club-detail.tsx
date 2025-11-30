@@ -53,7 +53,13 @@ export default function ClubDetailScreen() {
         throw new Error(`Messages error: ${error.message || error}`);
       }
 
-      setMembers(membersData.members || []);
+      // Mapear avatar_url a avatarUrl para consistencia con profile
+      const mappedMembers = (membersData.members || []).map(m => ({
+        ...m,
+        avatarUrl: m.avatar_url || m.avatarUrl
+      }));
+
+      setMembers(mappedMembers);
       setMessages(messagesData.messages || []);
     } catch (error: any) {
       console.error('🔴 [ClubDetail] Error loading club data:', error);
@@ -124,9 +130,9 @@ export default function ClubDetailScreen() {
     return members.map((member, index) => (
       <View key={member.user_id} style={styles.memberCard}>
         <View style={styles.memberInfo}>
-          {member.avatar_url ? (
+          {member.avatarUrl && !member.avatarUrl.includes('pravatar') ? (
             <Image 
-              source={{ uri: member.avatar_url }} 
+              source={{ uri: member.avatarUrl }} 
               style={styles.memberAvatar}
             />
           ) : (

@@ -57,6 +57,11 @@ export default function LoginScreen() {
           ]}
           onPress={handleLogin}
         >
+          <Image 
+            source={require('@/assets/images/spotify.png')}
+            style={styles.spotifyLogo}
+            resizeMode="contain"
+          />
           <ThemedText style={styles.loginButtonText}>
             Iniciar sesión con Spotify
           </ThemedText>
@@ -138,19 +143,31 @@ const styles = StyleSheet.create({
     borderColor: SpotifyColors.green,
   },
   loginButton: {
-    backgroundColor: SpotifyColors.green,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 24,
+    backgroundColor: SpotifyColors.black,
+    borderWidth: 2,
+    borderColor: SpotifyColors.green,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 30,
     marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: 350,
   },
   loginButtonPressed: {
     opacity: 0.8,
   },
+  spotifyLogo: {
+    width: 28,
+    height: 28,
+    marginRight: 12,
+  },
   loginButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: SpotifyColors.black,
+    color: SpotifyColors.white,
   },
   footer: {
     fontSize: 12,
@@ -158,20 +175,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   manualButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: SpotifyColors.black,
     borderWidth: 2,
     borderColor: SpotifyColors.green,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingVertical: 14,
+    borderRadius: 30,
     marginBottom: 16,
+    width: '100%',
+    maxWidth: 350,
   },
   manualButtonPressed: {
     opacity: 0.6,
   },
   manualButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
     color: SpotifyColors.green,
     textAlign: 'center',
   },
