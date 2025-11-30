@@ -74,19 +74,48 @@ exports.leaveClub = async (req, res) => {
 
 exports.searchClubs = async (req, res) => {
   try {
+    console.log('🔵 [Clubs] searchClubs - query:', req.query);
     const { name } = req.query;
-    if (!name || name.trim() === '') return res.status(400).json({ error: 'name_required' });
+    if (!name || name.trim() === '') {
+      console.log('🔴 [Clubs] searchClubs - name is required');
+      return res.status(400).json({ error: 'name_required' });
+    }
 
+    console.log('🔵 [Clubs] searchClubs - searching for:', name.trim());
     const result = await clubsSvc.searchClubsService({ name: name.trim(), limit: 20 });
-    if (result.error) return res.status(500).json({ error: 'server_error' });
+    if (result.error) {
+      console.error('🔴 [Clubs] searchClubs error:', result.error);
+      return res.status(500).json({ error: 'server_error' });
+    }
+    console.log('🟢 [Clubs] searchClubs success - clubs:', result.data?.clubs?.length || 0);
     return res.json(result.data);
   } catch (err) {
-    console.error('searchClubs controller error', err);
+    console.error('🔴 [Clubs] searchClubs controller error', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };
 
 exports.listClubs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log('🔵 [Clubs] listClubs - userId:', userId);
+    
+    // Obtener el club del usuario
+    const result = await clubsSvc.getUserClubService({ userId });
+    if (result.error) {
+      console.log('⚪ [Clubs] Usuario no está en ningún club');
+      return res.json({ clubs: [] });
+    }
+    
+    console.log('🟢 [Clubs] Club del usuario:', result.data);
+    return res.json({ clubs: result.data ? [result.data] : [] });
+  } catch (err) {
+    console.error('🔴 [Clubs] listClubs controller error', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
+exports.listAllClubs = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -94,34 +123,106 @@ exports.listClubs = async (req, res) => {
     if (result.error) return res.status(500).json({ error: 'server_error' });
     return res.json(result.data);
   } catch (err) {
-    console.error('listClubs controller error', err);
+    console.error('listAllClubs controller error', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
+exports.debugUserClub = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const db = require('../db/supabase');
+    
+    console.log('🔍 [Debug] Verificando club del usuario:', userId);
+    
+    // Verificar membresía
+    const { data: member, error: memberErr } = await db.getMemberByUserId(userId);
+    console.log('🔍 [Debug] Membresía encontrada:', { member, memberErr });
+    
+    if (!member) {
+      return res.json({ 
+        inClub: false, 
+        message: 'Usuario no está en ningún club',
+        member: null,
+        club: null
+      });
+    }
+    
+    // Verificar si el club existe
+    const { data: club, error: clubErr } = await db.getClubById(member.club_id);
+    console.log('🔍 [Debug] Club encontrado:', { club, clubErr });
+    
+    return res.json({
+      inClub: true,
+      member: member,
+      club: club,
+      isOrphan: !club
+    });
+  } catch (err) {
+    console.error('🔴 [Debug] Error:', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
+exports.cleanOrphanMembership = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const supabase = require('../db/supabaseClient');
+    
+    console.log('🔧 [Clean] Limpiando membresías huérfanas para:', userId);
+    
+    // Eliminar cualquier membresía del usuario
+    const { error } = await supabase
+      .from('club_members')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('🔴 [Clean] Error:', error);
+      return res.status(500).json({ error: 'server_error' });
+    }
+    
+    console.log('🟢 [Clean] Membresías limpiadas');
+    return res.json({ message: 'Membresías limpiadas', success: true });
+  } catch (err) {
+    console.error('🔴 [Clean] Error:', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };
 
 exports.getMembers = async (req, res) => {
   try {
+    console.log('🔵 [Clubs] getMembers - clubId:', req.params.clubId);
     const clubId = req.params.clubId;
     const result = await clubsSvc.membersOfClubService({ clubId });
-    if (result.error) return res.status(500).json({ error: 'server_error' });
+    if (result.error) {
+      console.error('🔴 [Clubs] getMembers error:', result.error);
+      return res.status(500).json({ error: 'server_error' });
+    }
+    console.log('🟢 [Clubs] getMembers success');
     return res.json(result.data);
   } catch (err) {
-    console.error('getMembers controller error', err);
+    console.error('🔴 [Clubs] getMembers controller error', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };
 
 exports.getMessages = async (req, res) => {
   try {
+    console.log('🔵 [Clubs] getMessages - clubId:', req.params.clubId);
     const clubId = req.params.clubId;
     const limit = parseInt(req.query.limit) || 50;
     const before = req.query.before || null;
 
     const result = await clubsSvc.getMessagesService({ clubId, limit, before });
-    if (result.error) return res.status(500).json({ error: 'server_error' });
+    if (result.error) {
+      console.error('🔴 [Clubs] getMessages error:', result.error);
+      return res.status(500).json({ error: 'server_error' });
+    }
+    console.log('🟢 [Clubs] getMessages success - messages:', result.data?.messages?.length || 0);
     return res.json(result.data);
   } catch (err) {
-    console.error('getMessages controller error', err);
+    console.error('🔴 [Clubs] getMessages controller error', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };

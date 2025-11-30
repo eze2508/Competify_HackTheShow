@@ -64,6 +64,12 @@ exports.callback = async (req, res) => {
       headers: { Authorization: `Bearer ${access_token}` }
     });
     const spotify_id = profileRes.data.id;
+    const display_name = profileRes.data.display_name || profileRes.data.id;
+    const avatar_url = profileRes.data.images && profileRes.data.images.length > 0 
+      ? profileRes.data.images[0].url 
+      : null;
+
+    console.log('🔵 [Auth] Spotify profile:', { spotify_id, display_name, avatar_url });
 
     const token_expires_at = new Date(Date.now() + expires_in * 1000).toISOString();
 
@@ -83,15 +89,19 @@ exports.callback = async (req, res) => {
       await supabase.from('users').update({
         access_token,
         refresh_token,
-        token_expires_at
+        token_expires_at,
+        display_name,
+        avatar_url
       }).eq('id', existing.id);
-      var user = { ...existing, access_token, refresh_token, token_expires_at };
+      var user = { ...existing, access_token, refresh_token, token_expires_at, display_name, avatar_url };
     } else {
       const insert = {
         spotify_id,
         access_token,
         refresh_token,
-        token_expires_at
+        token_expires_at,
+        display_name,
+        avatar_url
       };
       const { data: inserted, error: insertError } = await supabase.from('users').insert(insert).select().single();
       if (insertError) {

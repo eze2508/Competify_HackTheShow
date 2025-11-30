@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
@@ -28,16 +28,42 @@ export default function ClubDetailScreen() {
   const loadClubData = useCallback(async () => {
     try {
       setLoading(true);
-      const [membersData, messagesData] = await Promise.all([
-        ApiService.getClubMembers(clubId),
-        ApiService.getClubMessages(clubId),
-      ]);
+      console.log('🔵 [ClubDetail] Loading club data for clubId:', clubId);
+      
+      // Load members and messages separately to see which one fails
+      let membersData = { members: [] };
+      let messagesData = { messages: [] };
+      
+      try {
+        console.log('🔵 [ClubDetail] Loading members...');
+        membersData = await ApiService.getClubMembers(clubId);
+        console.log('🟢 [ClubDetail] Members loaded:', membersData.members?.length || 0);
+        console.log('🟢 [ClubDetail] Members data:', JSON.stringify(membersData.members, null, 2));
+      } catch (error: any) {
+        console.error('🔴 [ClubDetail] Error loading members:', error);
+        throw new Error(`Members error: ${error.message || error}`);
+      }
 
-      setMembers(membersData.members || []);
+      try {
+        console.log('🔵 [ClubDetail] Loading messages...');
+        messagesData = await ApiService.getClubMessages(clubId);
+        console.log('🟢 [ClubDetail] Messages loaded:', messagesData.messages?.length || 0);
+      } catch (error: any) {
+        console.error('🔴 [ClubDetail] Error loading messages:', error);
+        throw new Error(`Messages error: ${error.message || error}`);
+      }
+
+      // Mapear avatar_url a avatarUrl para consistencia con profile
+      const mappedMembers = (membersData.members || []).map(m => ({
+        ...m,
+        avatarUrl: m.avatar_url || m.avatarUrl
+      }));
+
+      setMembers(mappedMembers);
       setMessages(messagesData.messages || []);
-    } catch (error) {
-      console.error('Error loading club data:', error);
-      Alert.alert('Error', 'No se pudo cargar la información del club');
+    } catch (error: any) {
+      console.error('🔴 [ClubDetail] Error loading club data:', error);
+      Alert.alert('Error', `No se pudo cargar la información del club: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -101,13 +127,30 @@ export default function ClubDetailScreen() {
       );
     }
 
-    return members.map((member) => (
+    return members.map((member, index) => (
       <View key={member.user_id} style={styles.memberCard}>
         <View style={styles.memberInfo}>
-          <Ionicons name="person-circle-outline" size={40} color={SpotifyColors.green} />
+          {member.avatarUrl && !member.avatarUrl.includes('pravatar') ? (
+            <Image 
+              source={{ uri: member.avatarUrl }} 
+              style={styles.memberAvatar}
+            />
+          ) : (
+            <View style={styles.memberAvatarPlaceholder}>
+              <ThemedText style={styles.memberAvatarInitial}>
+                {(member.username || 'U').charAt(0).toUpperCase()}
+              </ThemedText>
+            </View>
+          )}
           <View style={styles.memberDetails}>
-            <ThemedText style={styles.memberName}>{member.username}</ThemedText>
+            <View style={styles.memberHeader}>
+              <ThemedText style={styles.memberName}>{member.username || 'Usuario'}</ThemedText>
+              <ThemedText style={styles.memberRank}>#{index + 1}</ThemedText>
+            </View>
             <ThemedText style={styles.memberDate}>
+              {member.hours_listened || 0}h escuchadas
+            </ThemedText>
+            <ThemedText style={styles.memberJoined}>
               Desde {new Date(member.joined_at).toLocaleDateString()}
             </ThemedText>
           </View>
@@ -305,17 +348,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  memberAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: SpotifyColors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberAvatarInitial: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: SpotifyColors.white,
+    lineHeight: 20,
+    includeFontPadding: false,
+  },
   memberDetails: {
     flex: 1,
+  },
+  memberHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   memberName: {
     fontSize: 16,
     fontWeight: '600',
     color: SpotifyColors.white,
-    marginBottom: 4,
+  },
+  memberRank: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: SpotifyColors.green,
   },
   memberDate: {
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '600',
+    color: SpotifyColors.green,
+    marginBottom: 2,
+  },
+  memberJoined: {
+    fontSize: 11,
     color: SpotifyColors.lightGray,
   },
   messageCard: {

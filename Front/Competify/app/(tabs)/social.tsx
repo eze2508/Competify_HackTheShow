@@ -79,6 +79,18 @@ export default function SocialScreen() {
     }
   }, [mode]);
 
+  // Buscar clubes automáticamente cuando cambia el texto
+  useEffect(() => {
+    if (mode === 'clubs' && clubSearchQuery.trim().length > 0) {
+      const timer = setTimeout(() => {
+        handleSearchClubs();
+      }, 500); // Debounce de 500ms
+      return () => clearTimeout(timer);
+    } else if (mode === 'clubs' && clubSearchQuery.trim().length === 0) {
+      setSearchResults([]);
+    }
+  }, [clubSearchQuery, mode]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     if (mode === 'friends') {

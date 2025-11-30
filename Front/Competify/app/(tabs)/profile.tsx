@@ -75,18 +75,7 @@ export default function ProfileScreen() {
         ApiService.getCurrentUser(),
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
-      
-      console.log('🟢 [Profile] Datos recibidos:', JSON.stringify({
-        user_id: user.id,
-        username: user.username,
-        // backend snake_case or ApiService mapped camelCase
-        total_hours: user.total_hours ?? user.totalHours,
-        total_ms: user.total_ms ?? user.totalMs ?? user.totalMilliseconds,
-        current_month_hours: user.current_month_hours ?? user.currentMonthHours,
-        current_week_hours: user.current_week_hours ?? user.currentWeekHours,
-        total_artists: user.total_artists ?? user.totalArtists,
-        rank: user.rank
-      }, null, 2));
+
       
       setUserId(user.id);
       setUserData(user);
@@ -108,20 +97,9 @@ export default function ProfileScreen() {
         ApiService.getTopArtists(5, 'medium_term').catch(() => []),
       ]);
       
-      console.log('🟢 [Profile] Datos refrescados:', JSON.stringify({
-        total_hours: user.total_hours ?? user.totalHours,
-        total_ms: user.total_ms ?? user.totalMs ?? user.totalMilliseconds,
-        current_month_hours: user.current_month_hours ?? user.currentMonthHours,
-        current_week_hours: user.current_week_hours ?? user.currentWeekHours,
-        total_artists: user.total_artists ?? user.totalArtists
-      }, null, 2));
-      
       setUserId(user.id);
       setUserData(user);
       setTopArtists(artists);
-    } catch (error) {
-      console.error('🔴 [Profile] Error refreshing profile data:', error);
-      Alert.alert('Error', `No se pudo actualizar el perfil: ${error.message}`);
     } finally {
       setRefreshing(false);
     }
@@ -162,10 +140,18 @@ export default function ProfileScreen() {
     rank: userData.rank || 'bronze'
   } : MOCK_USER_DATA;
   
+  // Calcular tiempo detallado para mostrar
+  const totalMs = displayData.total_ms || displayData.totalHours * 3600000;
+  const days = Math.floor(totalMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((totalMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((totalMs % (1000 * 60)) / 1000);
+  
   console.log('🟡 [Profile] displayData final:', {
     usando_mock: !userData,
     totalHours: displayData.totalHours,
     total_ms: displayData.total_ms,
+    tiempo_mostrado: `${days}d ${hours}h ${minutes}m ${seconds}s`,
     currentMonthHours: displayData.currentMonthHours,
     currentWeekHours: displayData.currentWeekHours,
     totalArtists: displayData.totalArtists
