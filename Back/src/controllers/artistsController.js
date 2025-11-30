@@ -60,19 +60,23 @@ exports.getTrackedArtists = async (req, res) => {
     const { data: tracked, error } = await supabase
       .from('tracked_artists')
       .select('artist_id, artist_name, artist_image_url, genres')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .not('artist_id', 'is', null)
+      .not('artist_name', 'is', null);
 
     if (error) throw error;
 
-    // Mapear al formato esperado por el frontend
-    const artists = (tracked || []).map(artist => ({
-      id: artist.artist_id,
-      name: artist.artist_name,
-      imageUrl: artist.artist_image_url,
-      genres: artist.genres || [],
-      followers: 0,
-      popularity: 0
-    }));
+    // Mapear al formato esperado por el frontend, filtrando artistas sin ID o nombre
+    const artists = (tracked || [])
+      .filter(artist => artist.artist_id && artist.artist_name)
+      .map(artist => ({
+        id: artist.artist_id,
+        name: artist.artist_name,
+        imageUrl: artist.artist_image_url,
+        genres: artist.genres || [],
+        followers: 0,
+        popularity: 0
+      }));
 
     res.json(artists);
   } catch (err) {
@@ -90,8 +94,9 @@ exports.trackArtist = async (req, res) => {
     const user = req.user;
     const { artistId, artistName, artistImageUrl, genres } = req.body;
 
-    if (!artistId || !artistName) {
-      return res.status(400).json({ error: 'artistId and artistName required' });
+    // Validar que artistId y artistName no sean undefined, null o vacíos
+    if (!artistId || !artistName || artistId === 'undefined' || artistName === 'undefined') {
+      return res.status(400).json({ error: 'artistId and artistName required and cannot be undefined' });
     }
 
     // Insertar o actualizar
