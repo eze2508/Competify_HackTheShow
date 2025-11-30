@@ -152,11 +152,7 @@ export default function ClubDetailScreen() {
     }
 
     return members.map((member, index) => (
-      <Pressable
-        key={member.user_id}
-        onPress={() => router.push(`/profile/${member.user_id}`)}
-        style={styles.memberCard}
-      >
+      <View key={member.user_id} style={styles.memberCard}>
         <View style={styles.memberInfo}>
           {member.avatarUrl && !member.avatarUrl.includes('pravatar') ? (
             <Image 
@@ -185,7 +181,7 @@ export default function ClubDetailScreen() {
             <ThemedText style={styles.memberRank}>#{index + 1}</ThemedText>
           </View>
         </View>
-      </Pressable>
+      </View>
     ));
   };
 

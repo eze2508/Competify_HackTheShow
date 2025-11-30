@@ -132,52 +132,6 @@ export class ApiService {
   }
 
   /**
-   * Obtiene el perfil de un usuario por su id (para ver perfiles públicos)
-   */
-  static async getUserById(userId: string): Promise<User> {
-    // Intentar llamar a /users/:id/profile o /users/:id según lo que exponga el backend
-    const token = await getAuthToken();
-    if (!token) throw new Error('No authentication token found');
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    };
-
-    // Intento 1: endpoint por convención
-    let response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/profile`, { headers });
-    if (!response.ok) {
-      // Intento 2: otro posible endpoint
-      response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}`, { headers });
-    }
-
-    if (!response.ok) {
-      let errMsg = `API Error: ${response.status}`;
-      try {
-        const errData = await response.json();
-        if (errData.error) errMsg = errData.error;
-      } catch (e) {}
-      throw new Error(errMsg);
-    }
-
-    const data = await response.json();
-    const mappedUser = {
-      id: String(data.user_id || data.id),
-      spotifyId: data.spotify_id || '',
-      username: data.username || data.display_name || 'Usuario',
-      avatarUrl: data.avatar_url || data.avatarUrl || 'https://i.pravatar.cc/300',
-      rank: data.rank || 'bronze' as VinylRank,
-      totalHours: data.total_hours || 0,
-      total_ms: data.total_ms || 0,
-      currentMonthHours: data.current_month_hours || 0,
-      currentWeekHours: data.current_week_hours || 0,
-      totalArtists: data.total_artists || 0,
-    };
-
-    return mappedUser;
-  }
-
-  /**
    * Obtiene estadísticas del usuario
    */
   static async getUserStats(): Promise<any> {
