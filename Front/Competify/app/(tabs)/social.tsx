@@ -268,31 +268,44 @@ export default function SocialScreen() {
       );
     }
 
-    return friends.map((friend) => (
-      <View key={friend.user_id} style={styles.card}>
-        {friend.avatar_url ? (
-          <Image source={{ uri: friend.avatar_url }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <ThemedText style={styles.avatarInitial}>
-              {friend.username?.charAt(0).toUpperCase() || '?'}
-            </ThemedText>
-          </View>
-        )}
-        <View style={styles.cardInfo}>
-          <ThemedText style={styles.cardName}>{friend.username}</ThemedText>
-          {friend.hours !== undefined && (
-            <ThemedText style={styles.cardSubtext}>{friend.hours.toFixed(0)} horas</ThemedText>
-          )}
-        </View>
+    return friends.map((friend, index) => {
+      // Prefer the same field used in club members: hours_listened
+      const hoursListened = (friend.hours_listened ?? friend.total_hours ?? friend.hours ?? friend.totalHours ?? 0) as number;
+
+      return (
         <Pressable
-          onPress={() => handleRemoveFriend(friend.user_id, friend.username)}
-          style={styles.iconButton}
+          key={friend.user_id}
+          style={styles.card}
+          onPress={() => router.push(`/profile/${encodeURIComponent(friend.user_id)}`)}
         >
-          <Ionicons name="trash-outline" size={20} color="#E22134" />
+          {friend.avatar_url ? (
+            <Image source={{ uri: friend.avatar_url }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <ThemedText style={styles.avatarInitial}>
+                {friend.username?.charAt(0).toUpperCase() || '?'}
+              </ThemedText>
+            </View>
+          )}
+
+          <View style={styles.cardInfo}>
+            <ThemedText style={styles.cardName}>{friend.username}</ThemedText>
+            <ThemedText style={styles.cardSubtext}>{Math.round(hoursListened)}h escuchadas</ThemedText>
+          </View>
+
+          <View style={styles.friendRankContainer}>
+            <ThemedText style={styles.friendRank}>#{index + 1}</ThemedText>
+          </View>
+
+          <Pressable
+            onPress={() => handleRemoveFriend(friend.user_id, friend.username)}
+            style={styles.iconButton}
+          >
+            <Ionicons name="trash-outline" size={20} color="#E22134" />
+          </Pressable>
         </Pressable>
-      </View>
-    ));
+      );
+    });
   };
 
   const renderReceivedRequests = () => {
@@ -728,6 +741,19 @@ const styles = StyleSheet.create({
   cardSubtext: {
     fontSize: 14,
     color: SpotifyColors.lightGray,
+  },
+  friendRankContainer: {
+    width: 56,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingRight: 8,
+  },
+  friendRank: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: SpotifyColors.green,
+    textAlign: 'right',
+    letterSpacing: 1,
   },
   cardDate: {
     fontSize: 12,
