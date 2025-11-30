@@ -269,7 +269,11 @@ export default function SocialScreen() {
     }
 
     return friends.map((friend) => (
-      <View key={friend.user_id} style={styles.card}>
+      <Pressable
+        key={friend.user_id}
+        style={styles.card}
+        onPress={() => router.push({ pathname: '/profile/[userId]', params: { userId: friend.user_id, username: friend.username, avatarUrl: friend.avatar_url } })}
+      >
         {friend.avatar_url ? (
           <Image source={{ uri: friend.avatar_url }} style={styles.avatar} />
         ) : (
@@ -291,7 +295,7 @@ export default function SocialScreen() {
         >
           <Ionicons name="trash-outline" size={20} color="#E22134" />
         </Pressable>
-      </View>
+      </Pressable>
     ));
   };
 

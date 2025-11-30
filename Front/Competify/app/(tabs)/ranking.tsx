@@ -11,34 +11,47 @@ import { Artist } from '@/types';
 type TimePeriod = 'week' | 'month' | 'year' | 'all-time';
 type RankingMode = 'global' | 'artist';
 
-// Función para generar rankings mock por artista
+// Función para generar rankings mock por artista (igual probabilidad para bronze/silver/gold)
 const generateArtistRanking = (artistId: string) => {
-  const hash = parseInt(artistId) || 1;
-  
-  const generateUsers = (count: number, baseHours: number, hourVariation: number, currentUserPosition: number) => {
-    const users = [];
+  const hash = Math.abs(parseInt(artistId) || 1);
+
+  function mulberry32(a: number) {
+    return function() {
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const ranks: VinylRank[] = ['bronze', 'silver', 'gold'];
+
+  const generateUsers = (count: number, baseHours: number, hourVariation: number, currentUserPosition: number, seed: number) => {
+    const users: any[] = [];
+    const rng = mulberry32(hash + seed);
     for (let i = 1; i <= count; i++) {
       const isCurrentUser = i === currentUserPosition;
       const hours = baseHours - (i - 1) * 2 + (hash % hourVariation);
-      const rank = i <= 3 ? (i === 1 ? 'gold' : i === 2 ? 'silver' : 'bronze') as VinylRank : 'bronze' as VinylRank;
-      
+      // Rank aleatorio con igual probabilidad, determinístico por seed
+      const randomRank = ranks[Math.floor(rng() * ranks.length)];
+
       users.push({
         id: String(i),
-        username: isCurrentUser ? 'Usuario123' : `User${hash}_${i}`,
+        username: isCurrentUser ? 'Usuario123' : `User${hash % 100}_${i}`,
         avatarUrl: `https://i.pravatar.cc/100?img=${(hash + i) % 70}`,
         hours: Math.max(1, hours),
-        rank: rank,
+        rank: randomRank,
         isCurrentUser: isCurrentUser
       });
     }
     return users;
   };
-  
+
   const rankings = {
-    week: generateUsers(20, 35, 15, 3),
-    month: generateUsers(20, 140, 40, 5),
-    year: generateUsers(20, 1500, 200, 7),
-    'all-time': generateUsers(20, 3500, 500, 10),
+    week: generateUsers(20, 35, 15, 3, 1),
+    month: generateUsers(20, 140, 40, 5, 2),
+    year: generateUsers(20, 1500, 200, 7, 3),
+    'all-time': generateUsers(20, 3500, 500, 10, 4),
   };
   return rankings;
 };
@@ -46,32 +59,44 @@ const generateArtistRanking = (artistId: string) => {
 // Mock data de rankings por artista
 const MOCK_ARTIST_RANKINGS: Record<string, any> = {};
 
-// Función auxiliar para generar rankings globales
+// Función auxiliar para generar rankings globales (igual probabilidad para bronze/silver/gold)
 const generateGlobalRanking = () => {
-  const generateUsers = (count: number, baseHours: number, currentUserPosition: number) => {
-    const users = [];
+  function mulberry32(a: number) {
+    return function() {
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const ranks: VinylRank[] = ['bronze', 'silver', 'gold'];
+
+  const generateUsers = (count: number, baseHours: number, currentUserPosition: number, seed: number) => {
+    const users: any[] = [];
+    const rng = mulberry32(seed);
     for (let i = 1; i <= count; i++) {
       const isCurrentUser = i === currentUserPosition;
       const hours = baseHours - (i - 1) * 2;
-      const rank = i <= 3 ? (i === 1 ? 'gold' : i === 2 ? 'silver' : 'bronze') as VinylRank : 'bronze' as VinylRank;
-      
+      const randomRank = ranks[Math.floor(rng() * ranks.length)];
+
       users.push({
         id: String(i),
         username: isCurrentUser ? 'Usuario123' : `User${i}`,
         avatarUrl: `https://i.pravatar.cc/100?img=${i}`,
         hours: Math.max(1, hours),
-        rank: rank,
+        rank: randomRank,
         isCurrentUser: isCurrentUser
       });
     }
     return users;
   };
-  
+
   return {
-    week: generateUsers(20, 45, 3),
-    month: generateUsers(20, 170, 5),
-    year: generateUsers(20, 1900, 7),
-    'all-time': generateUsers(20, 5500, 10),
+    week: generateUsers(20, 45, 3, 1),
+    month: generateUsers(20, 170, 5, 2),
+    year: generateUsers(20, 1900, 7, 3),
+    'all-time': generateUsers(20, 5500, 10, 4),
   };
 };
 

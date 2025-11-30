@@ -53,11 +53,35 @@ export default function ClubDetailScreen() {
         throw new Error(`Messages error: ${error.message || error}`);
       }
 
-      // Mapear avatar_url a avatarUrl para consistencia con profile
-      const mappedMembers = (membersData.members || []).map(m => ({
-        ...m,
-        avatarUrl: m.avatar_url || m.avatarUrl
-      }));
+      // Obtener datos del usuario actual para que se muestre su avatar/nombre tal como en profile
+      let currentUserInfo = null;
+      try {
+        currentUserInfo = await ApiService.getCurrentUser();
+        console.log('🔵 [ClubDetail] Current user info loaded for avatar override:', currentUserInfo?.id);
+      } catch (err) {
+        console.warn('⚠️ [ClubDetail] Could not load current user info:', err);
+      }
+
+      // Mapear igual que en profile.tsx: avatar_url -> avatarUrl, display_name -> username
+      const mappedMembers = (membersData.members || []).map(m => {
+        const username = m.username || m.display_name || 'Usuario';
+        const avatarUrl = m.avatar_url || m.avatarUrl || 'https://i.pravatar.cc/300';
+
+        // Si este miembro es el usuario actual, sobrescribir con los datos más recientes
+        if (currentUserInfo && (m.user_id === currentUserInfo.id)) {
+          return {
+            ...m,
+            username: currentUserInfo.username || currentUserInfo.display_name || username,
+            avatarUrl: currentUserInfo.avatar_url || currentUserInfo.avatarUrl || avatarUrl
+          };
+        }
+
+        return {
+          ...m,
+          username,
+          avatarUrl
+        };
+      });
 
       setMembers(mappedMembers);
       setMessages(messagesData.messages || []);
@@ -128,7 +152,11 @@ export default function ClubDetailScreen() {
     }
 
     return members.map((member, index) => (
-      <View key={member.user_id} style={styles.memberCard}>
+      <Pressable
+        key={member.user_id}
+        onPress={() => router.push(`/profile/${member.user_id}`)}
+        style={styles.memberCard}
+      >
         <View style={styles.memberInfo}>
           {member.avatarUrl && !member.avatarUrl.includes('pravatar') ? (
             <Image 
@@ -145,7 +173,6 @@ export default function ClubDetailScreen() {
           <View style={styles.memberDetails}>
             <View style={styles.memberHeader}>
               <ThemedText style={styles.memberName}>{member.username || 'Usuario'}</ThemedText>
-              <ThemedText style={styles.memberRank}>#{index + 1}</ThemedText>
             </View>
             <ThemedText style={styles.memberDate}>
               {member.hours_listened || 0}h escuchadas
@@ -154,8 +181,11 @@ export default function ClubDetailScreen() {
               Desde {new Date(member.joined_at).toLocaleDateString()}
             </ThemedText>
           </View>
+          <View style={styles.memberRankContainer}>
+            <ThemedText style={styles.memberRank}>#{index + 1}</ThemedText>
+          </View>
         </View>
-      </View>
+      </Pressable>
     ));
   };
 
@@ -187,7 +217,7 @@ export default function ClubDetailScreen() {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={100}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
       <ThemedView style={styles.container}>
         {/* Header */}
@@ -340,32 +370,33 @@ const styles = StyleSheet.create({
   memberCard: {
     backgroundColor: SpotifyColors.mediumGray,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 8,
   },
   memberInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   memberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   memberAvatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: SpotifyColors.green,
     alignItems: 'center',
     justifyContent: 'center',
   },
   memberAvatarInitial: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: SpotifyColors.white,
-    lineHeight: 20,
+    lineHeight: 18,
     includeFontPadding: false,
   },
   memberDetails: {
@@ -375,17 +406,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   memberName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: SpotifyColors.white,
   },
   memberRank: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: SpotifyColors.green,
+    alignSelf: 'center',
+    width: 56,
+    paddingRight: 8,
+    textAlign: 'right',
+    letterSpacing: 1,
   },
   memberDate: {
     fontSize: 13,
@@ -426,27 +462,30 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 14,
     backgroundColor: SpotifyColors.mediumGray,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
     gap: 10,
+    alignItems: 'center',
   },
   messageInput: {
     flex: 1,
     backgroundColor: SpotifyColors.black,
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 14,
     color: SpotifyColors.white,
     fontSize: 14,
-    maxHeight: 100,
+    minHeight: 18,
+    maxHeight: 60,
+    height: 120,
   },
   sendButton: {
     backgroundColor: SpotifyColors.green,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 40,
+    width: 60,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
   },

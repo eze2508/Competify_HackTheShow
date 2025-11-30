@@ -157,6 +157,28 @@ export default function ArtistRankingScreen() {
     userRank = currentUser?.rank || 'bronze';
   }
 
+  function mulberry32(a: number) {
+    return function() {
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function getRandomVinylRank(period: TimePeriod, artistSeed?: number) {
+    const ranks: VinylRank[] = ['bronze', 'silver', 'gold'];
+    const seedMap: Record<TimePeriod, number> = { week: 1, month: 2, year: 3, 'all-time': 4 };
+    const base = seedMap[period] || 1;
+    const seed = (artistSeed || 0) + base;
+    const rng = mulberry32(seed);
+    return ranks[Math.floor(rng() * ranks.length)];
+  }
+
+  // derive a numeric seed from artistId if available for consistency per artist
+  const artistSeed = artistId ? Math.abs(parseInt((artistId || '').slice(0, 8), 36)) % 100000 : 0;
+  const vinylRank = getRandomVinylRank(selectedPeriod, artistSeed);
+
   return (
     <ThemedView style={styles.container}>
       {/* Header con botón de volver */}
@@ -181,7 +203,7 @@ export default function ArtistRankingScreen() {
           )}
           
           <View style={styles.vinylImageContainer}>
-            <VinylBadge rank={userRank} size="medium" hideLabel={true} />
+            <VinylBadge rank={vinylRank} size="medium" hideLabel={true} />
           </View>
         </View>
         
@@ -406,5 +428,13 @@ const styles = StyleSheet.create({
   rankingContent: {
     padding: 16,
     paddingBottom: 32,
+  },
+  headerRight: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    zIndex: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
