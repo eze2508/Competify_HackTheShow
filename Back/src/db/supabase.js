@@ -117,10 +117,18 @@ async function deleteClubIfEmpty(club_id) {
 
 async function getTotalMsPerUserForClub(club_id) {
   // returns mapping user_id -> sum(total_ms)
+  const membersResult = await getMembersByClubId(club_id);
+  if (membersResult.error) return { error: membersResult.error };
+  
+  const members = membersResult.data || [];
+  if (members.length === 0) return { data: {} };
+  
+  const userIds = members.map(m => m.user_id);
+
   const { data, error } = await supabase
     .from('listening_sessions')
     .select('user_id, total_ms')
-    .in('user_id', (await getMembersByClubId(club_id)).data.map(m => m.user_id));
+    .in('user_id', userIds);
 
   if (error) return { error };
 
@@ -132,8 +140,10 @@ async function getTotalMsPerUserForClub(club_id) {
 }
 
 async function isMember({ club_id, user_id }) {
-  const { data } = await getMembersByClubId(club_id);
-  return data?.some(m => m.user_id === user_id);
+  const result = await getMembersByClubId(club_id);
+  if (result.error) return false;
+  const members = result.data || [];
+  return members.some(m => m.user_id === user_id);
 }
 
 /**
