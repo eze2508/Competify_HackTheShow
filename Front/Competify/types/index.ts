@@ -136,7 +136,6 @@ export interface Club {
 export interface ClubMember {
   user_id: string;
   username: string;
-  avatar_url?: string | null;
   joined_at: string;
   hours_listened?: number;
 }

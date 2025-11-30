@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { StyleSheet, ScrollView, View, Pressable, TextInput, Alert, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
@@ -24,22 +24,11 @@ export default function ClubDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [messageText, setMessageText] = useState('');
-  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const loadClubData = useCallback(async () => {
     try {
       setLoading(true);
       console.log('🔵 [ClubDetail] Loading club data for clubId:', clubId);
-      
-      // Load current user data first
-      let userData = null;
-      try {
-        userData = await ApiService.getCurrentUser();
-        setCurrentUser(userData);
-        console.log('🟢 [ClubDetail] Current user loaded:', userData.id);
-      } catch (error) {
-        console.error('🔴 [ClubDetail] Error loading current user:', error);
-      }
       
       // Load members and messages separately to see which one fails
       let membersData = { members: [] };
@@ -49,20 +38,7 @@ export default function ClubDetailScreen() {
         console.log('🔵 [ClubDetail] Loading members...');
         membersData = await ApiService.getClubMembers(clubId);
         console.log('🟢 [ClubDetail] Members loaded:', membersData.members?.length || 0);
-        
-        // Enrich current user's member data with profile info
-        if (userData) {
-          membersData.members = membersData.members.map((member: ClubMember) => {
-            if (member.user_id === userData.id) {
-              return {
-                ...member,
-                username: userData.username || userData.display_name || member.username,
-                avatar_url: userData.avatar_url || userData.avatarUrl || member.avatar_url
-              };
-            }
-            return member;
-          });
-        }
+        console.log('🟢 [ClubDetail] Members data:', JSON.stringify(membersData.members, null, 2));
       } catch (error: any) {
         console.error('🔴 [ClubDetail] Error loading members:', error);
         throw new Error(`Members error: ${error.message || error}`);
@@ -148,18 +124,7 @@ export default function ClubDetailScreen() {
     return members.map((member, index) => (
       <View key={member.user_id} style={styles.memberCard}>
         <View style={styles.memberInfo}>
-          {member.avatar_url ? (
-            <Image 
-              source={{ uri: member.avatar_url }} 
-              style={styles.memberAvatar}
-            />
-          ) : (
-            <View style={styles.memberAvatarPlaceholder}>
-              <ThemedText style={styles.memberAvatarInitial}>
-                {(member.username || 'U').charAt(0).toUpperCase()}
-              </ThemedText>
-            </View>
-          )}
+          <Ionicons name="person-circle-outline" size={40} color={SpotifyColors.green} />
           <View style={styles.memberDetails}>
             <View style={styles.memberHeader}>
               <ThemedText style={styles.memberName}>{member.username || 'Usuario'}</ThemedText>
@@ -365,26 +330,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  memberAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  memberAvatarPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: SpotifyColors.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  memberAvatarInitial: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: SpotifyColors.white,
-    lineHeight: 22,
-    includeFontPadding: false,
   },
   memberDetails: {
     flex: 1,
